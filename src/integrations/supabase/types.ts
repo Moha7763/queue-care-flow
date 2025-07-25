@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_settings: {
+        Row: {
+          created_at: string
+          ct_scan_start_number: number
+          date: string
+          id: string
+          mri_start_number: number
+          ultrasound_start_number: number
+          xray_start_number: number
+        }
+        Insert: {
+          created_at?: string
+          ct_scan_start_number?: number
+          date?: string
+          id?: string
+          mri_start_number?: number
+          ultrasound_start_number?: number
+          xray_start_number?: number
+        }
+        Update: {
+          created_at?: string
+          ct_scan_start_number?: number
+          date?: string
+          id?: string
+          mri_start_number?: number
+          ultrasound_start_number?: number
+          xray_start_number?: number
+        }
+        Relationships: []
+      }
+      system_users: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          role: string | null
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          role?: string | null
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          role?: string | null
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          date: string
+          exam_type: Database["public"]["Enums"]["exam_type"]
+          id: string
+          postpone_count: number
+          status: Database["public"]["Enums"]["ticket_status"]
+          ticket_number: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          exam_type: Database["public"]["Enums"]["exam_type"]
+          id?: string
+          postpone_count?: number
+          status?: Database["public"]["Enums"]["ticket_status"]
+          ticket_number: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          exam_type?: Database["public"]["Enums"]["exam_type"]
+          id?: string
+          postpone_count?: number
+          status?: Database["public"]["Enums"]["ticket_status"]
+          ticket_number?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +115,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      exam_type: "xray" | "ultrasound" | "ct_scan" | "mri"
+      ticket_status:
+        | "waiting"
+        | "current"
+        | "postponed"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +248,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      exam_type: ["xray", "ultrasound", "ct_scan", "mri"],
+      ticket_status: [
+        "waiting",
+        "current",
+        "postponed",
+        "completed",
+        "cancelled",
+      ],
+    },
   },
 } as const
