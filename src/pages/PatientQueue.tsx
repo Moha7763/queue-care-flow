@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-const examTypes = {
+type ExamType = 'xray' | 'ultrasound' | 'ct_scan' | 'mri';
+
+const examTypes: Record<ExamType, string> = {
   xray: 'أشعة عادية',
   ultrasound: 'سونار', 
   ct_scan: 'مقطعية',
@@ -16,7 +18,7 @@ const PatientQueue = () => {
   const [currentTickets, setCurrentTickets] = useState<any[]>([]);
   const { toast } = useToast();
 
-  const createTicket = async (examType: string) => {
+  const createTicket = async (examType: ExamType) => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
@@ -103,7 +105,7 @@ const PatientQueue = () => {
               </CardHeader>
               <CardContent>
                 <Button 
-                  onClick={() => createTicket(type)}
+                  onClick={() => createTicket(type as ExamType)}
                   className="w-full"
                 >
                   إنشاء تذكرة جديدة
