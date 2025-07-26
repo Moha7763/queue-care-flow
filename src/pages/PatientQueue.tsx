@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Printer } from 'lucide-react';
 
 type ExamType = 'xray' | 'ultrasound' | 'ct_scan' | 'mri';
 
@@ -15,7 +16,12 @@ const examTypes: Record<ExamType, string> = {
 };
 
 const PatientQueue = () => {
-  const [currentTickets, setCurrentTickets] = useState<any[]>([]);
+  const [currentTickets, setCurrentTickets] = useState<Record<ExamType, any[]>>({
+    xray: [],
+    ultrasound: [],
+    ct_scan: [],
+    mri: []
+  });
   const { toast } = useToast();
 
   const createTicket = async (examType: ExamType) => {
@@ -23,34 +29,36 @@ const PatientQueue = () => {
       const today = new Date().toISOString().split('T')[0];
       
       // Get daily settings
-      const { data: settings } = await supabase
+      const { data: settingsData } = await supabase
         .from('daily_settings')
         .select('*')
         .eq('date', today)
         .single();
 
-      // Get last ticket number for this exam type
+      let startNumber = 1;
+      if (settingsData) {
+        const settingKey = `${examType}_start_number` as keyof typeof settingsData;
+        startNumber = settingsData[settingKey] as number;
+      }
+
+      // Get the last ticket number for this exam type today
       const { data: lastTicket } = await supabase
         .from('tickets')
         .select('ticket_number')
         .eq('exam_type', examType)
         .eq('date', today)
         .order('ticket_number', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .single();
 
-      let nextNumber = 1;
-      if (settings && lastTicket && lastTicket.length > 0) {
-        nextNumber = lastTicket[0].ticket_number + 1;
-      } else if (settings) {
-        nextNumber = settings[`${examType}_start_number`];
-      }
+      const nextNumber = lastTicket ? lastTicket.ticket_number + 1 : startNumber;
 
+      // Create new ticket
       const { data, error } = await supabase
         .from('tickets')
         .insert({
           ticket_number: nextNumber,
           exam_type: examType,
-          status: 'waiting',
           date: today
         })
         .select()
@@ -58,17 +66,87 @@ const PatientQueue = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "تم إنشاء التذكرة",
-        description: `رقم التذكرة: ${nextNumber} - ${examTypes[examType as keyof typeof examTypes]}`
-      });
-
-      loadCurrentTickets();
+      if (data) {
+        // Print the ticket
+        printTicket(data.ticket_number, examType);
+        
+        toast({
+          title: "تم إنشاء التذكرة بنجاح",
+          description: `رقم التذكرة: ${data.ticket_number} - ${examTypes[examType]}`
+        });
+        loadCurrentTickets();
+      }
     } catch (error) {
+      console.error('Error creating ticket:', error);
       toast({
         title: "خطأ في إنشاء التذكرة",
         variant: "destructive"
       });
+    }
+  };
+
+  const getExamPrefix = (examType: ExamType): string => {
+    const prefixes = {
+      xray: 'X',
+      ultrasound: 'U', 
+      ct_scan: 'C',
+      mri: 'M'
+    };
+    return prefixes[examType];
+  };
+
+  const generateQRCode = (ticketNumber: number, examType: ExamType): string => {
+    const data = JSON.stringify({
+      ticket: ticketNumber,
+      type: examType,
+      date: new Date().toISOString().split('T')[0],
+      center: 'الحياة للأشعة'
+    });
+    return `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(data)}`;
+  };
+
+  const printTicket = (ticketNumber: number, examType: ExamType) => {
+    const prefix = getExamPrefix(examType);
+    const qrCodeUrl = generateQRCode(ticketNumber, examType);
+    
+    const printContent = `
+      <div class="print-ticket">
+        <h2 style="margin: 10px 0; font-size: 18px; font-weight: bold;">مركز الحياة للأشعة</h2>
+        <div style="margin: 15px 0;">
+          <div style="font-size: 16px; margin: 5px 0;">${examTypes[examType]}</div>
+          <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">${prefix}${ticketNumber}</div>
+          <div style="margin: 15px 0;">
+            <img src="${qrCodeUrl}" alt="QR Code" style="max-width: 100px;" />
+          </div>
+          <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleDateString('ar-EG')}</div>
+          <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleTimeString('ar-EG')}</div>
+        </div>
+      </div>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>طباعة التذكرة</title>
+            <style>
+              body { margin: 0; padding: 20px; font-family: 'Courier New', monospace; }
+              .print-ticket { text-align: center; max-width: 300px; margin: 0 auto; }
+              @media print {
+                body { margin: 0; padding: 0; }
+                .print-ticket { padding: 10px; }
+              }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
     }
   };
 
@@ -82,7 +160,20 @@ const PatientQueue = () => {
         .in('status', ['current', 'waiting', 'postponed'])
         .order('created_at');
 
-      setCurrentTickets(data || []);
+      if (data) {
+        const groupedTickets: Record<ExamType, any[]> = {
+          xray: [],
+          ultrasound: [],
+          ct_scan: [],
+          mri: []
+        };
+
+        data.forEach((ticket: any) => {
+          groupedTickets[ticket.exam_type as ExamType].push(ticket);
+        });
+
+        setCurrentTickets(groupedTickets);
+      }
     } catch (error) {
       console.error('Error loading tickets:', error);
     }
@@ -93,60 +184,66 @@ const PatientQueue = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-center">نظام طابور المرضى</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="min-h-screen bg-background p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8">
+        <div className="text-center">
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">إنشاء تذكرة جديدة</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">اختر نوع الفحص لإنشاء تذكرة</p>
+        </div>
+
+        {/* Create New Ticket Section */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {Object.entries(examTypes).map(([type, name]) => (
-            <Card key={type} className="text-center">
-              <CardHeader>
-                <CardTitle>{name}</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <Card key={type} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-3 sm:p-6 text-center">
+                <h3 className="text-sm sm:text-xl font-semibold mb-2 sm:mb-4">{name}</h3>
                 <Button 
                   onClick={() => createTicket(type as ExamType)}
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
+                  size="lg"
                 >
-                  إنشاء تذكرة جديدة
+                  <Printer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  إنشاء تذكرة
                 </Button>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>الدور الحالي</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Object.entries(examTypes).map(([type, name]) => {
-                const tickets = currentTickets.filter(t => t.exam_type === type);
-                const current = tickets.find(t => t.status === 'current');
-                const waiting = tickets.filter(t => t.status === 'waiting').length;
-                
-                return (
-                  <div key={type} className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">{name}</h3>
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm text-muted-foreground">الحالي: </span>
-                        <Badge variant={current ? "default" : "secondary"}>
-                          {current ? current.ticket_number : 'لا يوجد'}
-                        </Badge>
-                      </div>
-                      <div>
-                        <span className="text-sm text-muted-foreground">في الانتظار: </span>
-                        <Badge variant="outline">{waiting}</Badge>
-                      </div>
+        {/* Current Queue Status */}
+        <div className="space-y-4 sm:space-y-6">
+          <h2 className="text-xl sm:text-2xl font-semibold text-center">الطابور الحالي</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {Object.entries(examTypes).map(([type, name]) => {
+              const examTickets = currentTickets[type as ExamType] || [];
+              const currentPatient = examTickets.find(t => t.status === 'current');
+              const waitingCount = examTickets.filter(t => t.status === 'waiting').length;
+              const prefix = getExamPrefix(type as ExamType);
+
+              return (
+                <Card key={type}>
+                  <CardHeader className="pb-2 sm:pb-4">
+                    <CardTitle className="text-center text-sm sm:text-lg">{name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center space-y-2 sm:space-y-3 pt-0">
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">المريض الحالي</p>
+                      <p className="text-lg sm:text-2xl font-bold">
+                        {currentPatient ? `${prefix}${currentPatient.ticket_number}` : '--'}
+                      </p>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">في الانتظار</p>
+                      <Badge variant="outline" className="text-sm sm:text-lg px-2 sm:px-3 py-1">
+                        {waitingCount}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

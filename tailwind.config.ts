@@ -61,7 +61,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Medical device colors
+				'xray': 'hsl(var(--xray-color))',
+				'ultrasound': 'hsl(var(--ultrasound-color))',
+				'ct': 'hsl(var(--ct-color))',
+				'mri': 'hsl(var(--mri-color))',
+				// Status colors
+				'waiting': 'hsl(var(--waiting-color))',
+				'current': 'hsl(var(--current-color))',
+				'postponed': 'hsl(var(--postponed-color))',
+				'completed': 'hsl(var(--completed-color))',
+				'cancelled': 'hsl(var(--cancelled-color))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

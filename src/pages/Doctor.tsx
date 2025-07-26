@@ -17,11 +17,11 @@ const examTypes: Record<ExamType, string> = {
 };
 
 const statusColors = {
-  waiting: 'bg-yellow-500',
-  current: 'bg-blue-500',
-  postponed: 'bg-orange-500',
-  completed: 'bg-green-500',
-  cancelled: 'bg-red-500'
+  waiting: 'bg-waiting',
+  current: 'bg-current',
+  postponed: 'bg-postponed',
+  completed: 'bg-completed',
+  cancelled: 'bg-cancelled'
 };
 
 const statusText = {
@@ -216,6 +216,27 @@ const Doctor = () => {
     }
   };
 
+  const recallPostponedPatient = async (ticketId: string) => {
+    try {
+      await supabase
+        .from('tickets')
+        .update({ status: 'waiting' })
+        .eq('id', ticketId);
+
+      toast({
+        title: "تم استدعاء المريض المؤجل",
+        description: "تم نقل المريض إلى قائمة الانتظار"
+      });
+
+      loadTickets();
+    } catch (error) {
+      toast({
+        title: "خطأ في استدعاء المريض",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     loadTickets();
     
@@ -241,17 +262,17 @@ const Doctor = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">واجهة الدكتور</h1>
-          <Button onClick={loadTickets} variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
+    <div className="min-h-screen bg-background p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto space-y-3 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">واجهة الدكتور</h1>
+          <Button onClick={loadTickets} variant="outline" size={window.innerWidth < 640 ? "sm" : "default"}>
+            <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
             تحديث
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6">
           {Object.entries(examTypes).map(([type, name]) => {
             const examTickets = tickets[type as ExamType];
             const currentPatient = examTickets.find(t => t.status === 'current');
@@ -266,43 +287,43 @@ const Doctor = () => {
                 <CardContent className="space-y-4">
                   {/* Current Patient */}
                   {currentPatient ? (
-                    <div className="border rounded-lg p-4 bg-blue-50">
+                    <div className="border rounded-lg p-2 sm:p-4 bg-current/10">
                       <div className="flex items-center justify-between mb-2">
-                        <Badge className="bg-blue-500">المريض الحالي</Badge>
-                        <span className="font-bold text-lg">{currentPatient.ticket_number}</span>
+                        <Badge className="bg-current text-xs sm:text-sm">المريض الحالي</Badge>
+                        <span className="font-bold text-sm sm:text-lg">{currentPatient.ticket_number}</span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                         <Button
                           size="sm"
                           onClick={() => completePatient(currentPatient.id)}
-                          className="flex-1"
+                          className="flex-1 text-xs"
                         >
-                          <CheckCircle className="w-4 h-4 mr-1" />
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                           إكمال
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => postponePatient(currentPatient.id, type as ExamType)}
-                          className="flex-1"
+                          className="flex-1 text-xs"
                         >
-                          <Clock className="w-4 h-4 mr-1" />
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                           تأجيل
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
                           onClick={() => cancelPatient(currentPatient.id)}
-                          className="flex-1"
+                          className="flex-1 text-xs"
                         >
-                          <XCircle className="w-4 h-4 mr-1" />
+                          <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                           إلغاء
                         </Button>
                       </div>
                     </div>
                   ) : (
                     <Alert>
-                      <AlertDescription>لا يوجد مريض حالياً</AlertDescription>
+                      <AlertDescription className="text-xs sm:text-sm">لا يوجد مريض حالياً</AlertDescription>
                     </Alert>
                   )}
 
@@ -338,14 +359,24 @@ const Doctor = () => {
                   {/* Postponed Patients */}
                   {postponedPatients.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="font-semibold text-sm">مؤجلة ({postponedPatients.length})</h4>
+                      <h4 className="font-semibold text-xs sm:text-sm">مؤجلة ({postponedPatients.length})</h4>
                       <div className="max-h-24 overflow-y-auto space-y-1">
                         {postponedPatients.map((ticket) => (
-                          <div key={ticket.id} className="flex items-center justify-between p-2 bg-orange-50 rounded">
-                            <span className="font-medium">{ticket.ticket_number}</span>
-                            <Badge variant="outline" className="text-orange-600">
-                              مؤجل ({ticket.postpone_count}/5)
-                            </Badge>
+                          <div key={ticket.id} className="flex items-center justify-between p-2 bg-postponed/10 rounded">
+                            <span className="font-medium text-xs sm:text-sm">{ticket.ticket_number}</span>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => recallPostponedPatient(ticket.id)}
+                                className="text-xs px-2 py-1"
+                              >
+                                استدعاء
+                              </Button>
+                              <Badge variant="outline" className="text-postponed text-xs">
+                                ({ticket.postpone_count}/5)
+                              </Badge>
+                            </div>
                           </div>
                         ))}
                       </div>

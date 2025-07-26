@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 210 85% 40%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -37,6 +37,19 @@ All colors MUST be HSL.
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+
+    /* Medical device type colors */
+    --xray-color: 210 85% 40%;
+    --ultrasound-color: 120 65% 35%;
+    --ct-color: 280 65% 45%;
+    --mri-color: 0 75% 45%;
+
+    /* Status colors */
+    --waiting-color: 45 95% 50%;
+    --current-color: 210 85% 40%;
+    --postponed-color: 25 85% 50%;
+    --completed-color: 120 65% 35%;
+    --cancelled-color: 0 75% 45%;
 
     --sidebar-background: 0 0% 98%;
 
@@ -102,4 +115,26 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Print styles for receipt tickets */
+@media print {
+  .print-ticket {
+    @apply text-center max-w-sm mx-auto p-4;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .print-ticket * {
+    @apply text-black;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
 }
