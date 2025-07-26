@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Printer } from 'lucide-react';
@@ -16,6 +18,9 @@ const examTypes: Record<ExamType, string> = {
 };
 
 const PatientQueue = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [currentTickets, setCurrentTickets] = useState<Record<ExamType, any[]>>({
     xray: [],
     ultrasound: [],
@@ -23,6 +28,48 @@ const PatientQueue = () => {
     mri: []
   });
   const { toast } = useToast();
+
+  const login = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const { data: users } = await supabase
+        .from('system_users')
+        .select('*')
+        .eq('username', username)
+        .eq('role', 'staff');
+      
+      if (users && users.length > 0) {
+        // In a real implementation, you'd verify the password hash here
+        if (password === users[0].password_hash) {
+          setIsAuthenticated(true);
+          loadCurrentTickets();
+          toast({
+            title: "تم تسجيل الدخول بنجاح",
+            description: "مرحباً بك في واجهة التذاكر"
+          });
+        } else {
+          toast({
+            title: "خطأ في كلمة المرور",
+            description: "كلمة المرور غير صحيحة",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "خطأ في اسم المستخدم",
+          description: "اسم المستخدم غير موجود",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "خطأ في الاتصال",
+        description: "فشل في الاتصال بقاعدة البيانات",
+        variant: "destructive"
+      });
+    }
+  };
 
   const createTicket = async (examType: ExamType) => {
     try {
@@ -180,15 +227,82 @@ const PatientQueue = () => {
   };
 
   useEffect(() => {
-    loadCurrentTickets();
-  }, []);
+    if (isAuthenticated) {
+      loadCurrentTickets();
+      
+      // Set up real-time subscription for automatic updates
+      const channel = supabase
+        .channel('queue-tickets')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tickets'
+          },
+          () => {
+            loadCurrentTickets();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl">واجهة التذاكر</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={login} className="space-y-4">
+              <div>
+                <Label htmlFor="username">اسم المستخدم</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="أدخل اسم المستخدم"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">كلمة المرور</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="أدخل كلمة المرور"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                دخول
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-2 sm:p-4">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8">
-        <div className="text-center">
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">إنشاء تذكرة جديدة</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">اختر نوع الفحص لإنشاء تذكرة</p>
+        <div className="flex justify-between items-center">
+          <div className="text-center flex-1">
+            <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">إنشاء تذكرة جديدة</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">اختر نوع الفحص لإنشاء تذكرة</p>
+          </div>
+          <Button onClick={() => setIsAuthenticated(false)} variant="destructive">
+            تسجيل خروج
+          </Button>
         </div>
 
         {/* Create New Ticket Section */}

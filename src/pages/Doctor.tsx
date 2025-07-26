@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ChevronRight, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +44,9 @@ interface Ticket {
 }
 
 const Doctor = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [tickets, setTickets] = useState<Record<ExamType, Ticket[]>>({
     xray: [],
     ultrasound: [],
@@ -50,6 +55,48 @@ const Doctor = () => {
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  const login = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const { data: users } = await supabase
+        .from('system_users')
+        .select('*')
+        .eq('username', username)
+        .eq('role', 'doctor');
+      
+      if (users && users.length > 0) {
+        // In a real implementation, you'd verify the password hash here
+        if (password === users[0].password_hash) {
+          setIsAuthenticated(true);
+          loadTickets();
+          toast({
+            title: "تم تسجيل الدخول بنجاح",
+            description: "مرحباً بك في واجهة الدكتور"
+          });
+        } else {
+          toast({
+            title: "خطأ في كلمة المرور",
+            description: "كلمة المرور غير صحيحة",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "خطأ في اسم المستخدم",
+          description: "اسم المستخدم غير موجود",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "خطأ في الاتصال",
+        description: "فشل في الاتصال بقاعدة البيانات",
+        variant: "destructive"
+      });
+    }
+  };
 
   const loadTickets = async () => {
     try {
@@ -238,38 +285,85 @@ const Doctor = () => {
   };
 
   useEffect(() => {
-    loadTickets();
-    
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('doctor-tickets')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tickets'
-        },
-        () => {
-          loadTickets();
-        }
-      )
-      .subscribe();
+    if (isAuthenticated) {
+      loadTickets();
+      
+      // Set up real-time subscription
+      const channel = supabase
+        .channel('doctor-tickets')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tickets'
+          },
+          () => {
+            loadTickets();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl">واجهة الدكتور</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={login} className="space-y-4">
+              <div>
+                <Label htmlFor="username">اسم المستخدم</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="أدخل اسم المستخدم"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">كلمة المرور</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="أدخل كلمة المرور"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                دخول
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-2 sm:p-4">
       <div className="max-w-7xl mx-auto space-y-3 sm:space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">واجهة الدكتور</h1>
-          <Button onClick={loadTickets} variant="outline" size={window.innerWidth < 640 ? "sm" : "default"}>
-            <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            تحديث
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={loadTickets} variant="outline" size={window.innerWidth < 640 ? "sm" : "default"}>
+              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              تحديث
+            </Button>
+            <Button onClick={() => setIsAuthenticated(false)} variant="destructive" size={window.innerWidth < 640 ? "sm" : "default"}>
+              تسجيل خروج
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6">

@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RefreshCw, RotateCcw, Users, CheckCircle, XCircle, Clock, Activity } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RefreshCw, RotateCcw, Users, CheckCircle, XCircle, Clock, Activity, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,6 +39,9 @@ const Admin = () => {
   });
   const [username, setUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [newUsername, setNewUsername] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState('staff');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -185,6 +189,62 @@ const Admin = () => {
       toast({
         title: "خطأ في تغيير كلمة المرور",
         description: "فشل في تغيير كلمة المرور",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const addNewUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newUsername || !newUserPassword) {
+      toast({
+        title: "بيانات ناقصة",
+        description: "يرجى إدخال اسم المستخدم وكلمة المرور",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Check if username already exists
+      const { data: existingUser } = await supabase
+        .from('system_users')
+        .select('username')
+        .eq('username', newUsername);
+
+      if (existingUser && existingUser.length > 0) {
+        toast({
+          title: "اسم المستخدم موجود",
+          description: "اسم المستخدم هذا موجود بالفعل",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // In a real implementation, you'd hash the password before storing
+      const { error } = await supabase
+        .from('system_users')
+        .insert({
+          username: newUsername,
+          password_hash: newUserPassword,
+          role: newUserRole
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "تم إضافة المستخدم",
+        description: `تم إضافة المستخدم ${newUsername} بنجاح`
+      });
+      
+      setNewUsername('');
+      setNewUserPassword('');
+      setNewUserRole('staff');
+    } catch (error) {
+      toast({
+        title: "خطأ في إضافة المستخدم",
+        description: "فشل في إضافة المستخدم الجديد",
         variant: "destructive"
       });
     }
@@ -350,14 +410,65 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        {/* Change Password */}
-        <Card>
-          <CardHeader>
-            <CardTitle>تغيير كلمة مرور المستخدم</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={changePassword} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* User Management */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Add New User */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                إضافة مستخدم جديد
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={addNewUser} className="space-y-4">
+                <div>
+                  <Label htmlFor="newUsername">اسم المستخدم</Label>
+                  <Input
+                    id="newUsername"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="أدخل اسم المستخدم الجديد"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="newUserPassword">كلمة المرور</Label>
+                  <Input
+                    id="newUserPassword"
+                    type="password"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    placeholder="أدخل كلمة المرور"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="role">الصلاحية</Label>
+                  <Select value={newUserRole} onValueChange={setNewUserRole}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر الصلاحية" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="staff">موظف تذاكر</SelectItem>
+                      <SelectItem value="doctor">دكتور</SelectItem>
+                      <SelectItem value="admin">مدير</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  إضافة مستخدم
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Change Password */}
+          <Card>
+            <CardHeader>
+              <CardTitle>تغيير كلمة مرور المستخدم</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={changePassword} className="space-y-4">
                 <div>
                   <Label htmlFor="username">اسم المستخدم</Label>
                   <Input
@@ -377,13 +488,13 @@ const Admin = () => {
                     placeholder="أدخل كلمة المرور الجديدة"
                   />
                 </div>
-              </div>
-              <Button type="submit">
-                تغيير كلمة المرور
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <Button type="submit" className="w-full">
+                  تغيير كلمة المرور
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
