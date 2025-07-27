@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, RotateCcw, Users, CheckCircle, XCircle, Clock, Activity, UserPlus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { RefreshCw, RotateCcw, Users, CheckCircle, XCircle, Clock, Activity, UserPlus, Trash2, Edit } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -42,6 +44,7 @@ const Admin = () => {
   const [newUsername, setNewUsername] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState('staff');
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -55,11 +58,13 @@ const Admin = () => {
         .eq('username', 'admin');
       
       if (users && users.length > 0) {
-        // In a real implementation, you'd verify the password hash here
-        // For now, we'll check against the plain password
-        if (password === 'admin123') {
+        // Hash the input password and compare
+        const { data: hashedPassword } = await supabase.rpc('hash_password', { password });
+        
+        if (hashedPassword === users[0].password_hash) {
           setIsAuthenticated(true);
           loadStats();
+          loadUsers();
           toast({
             title: "تم تسجيل الدخول بنجاح",
             description: "مرحباً بك في لوحة التحكم"
@@ -157,6 +162,25 @@ const Admin = () => {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const { data: allUsers } = await supabase
+        .from('system_users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (allUsers) {
+        setUsers(allUsers);
+      }
+    } catch (error) {
+      toast({
+        title: "خطأ في تحميل المستخدمين",
+        description: "فشل في تحميل قائمة المستخدمين",
+        variant: "destructive"
+      });
+    }
+  };
+
   const changePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -170,10 +194,12 @@ const Admin = () => {
     }
 
     try {
-      // In a real implementation, you'd hash the password before storing
+      // Hash the new password before storing
+      const { data: hashedPassword } = await supabase.rpc('hash_password', { password: newPassword });
+      
       const { error } = await supabase
         .from('system_users')
-        .update({ password_hash: newPassword })
+        .update({ password_hash: hashedPassword })
         .eq('username', username);
 
       if (error) throw error;
@@ -185,6 +211,7 @@ const Admin = () => {
       
       setUsername('');
       setNewPassword('');
+      loadUsers();
     } catch (error) {
       toast({
         title: "خطأ في تغيير كلمة المرور",
@@ -222,12 +249,14 @@ const Admin = () => {
         return;
       }
 
-      // In a real implementation, you'd hash the password before storing
+      // Hash the password before storing
+      const { data: hashedPassword } = await supabase.rpc('hash_password', { password: newUserPassword });
+
       const { error } = await supabase
         .from('system_users')
         .insert({
           username: newUsername,
-          password_hash: newUserPassword,
+          password_hash: hashedPassword,
           role: newUserRole
         });
 
@@ -241,6 +270,7 @@ const Admin = () => {
       setNewUsername('');
       setNewUserPassword('');
       setNewUserRole('staff');
+      loadUsers();
     } catch (error) {
       toast({
         title: "خطأ في إضافة المستخدم",
@@ -250,9 +280,38 @@ const Admin = () => {
     }
   };
 
+  const deleteUser = async (userId: string, username: string) => {
+    if (!confirm(`هل أنت متأكد من حذف المستخدم ${username}؟`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('system_users')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "تم حذف المستخدم",
+        description: `تم حذف المستخدم ${username} بنجاح`
+      });
+      
+      loadUsers();
+    } catch (error) {
+      toast({
+        title: "خطأ في حذف المستخدم",
+        description: "فشل في حذف المستخدم",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       loadStats();
+      loadUsers();
     }
   }, [isAuthenticated]);
 
@@ -495,6 +554,77 @@ const Admin = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* User Management Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              إدارة المستخدمين
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>اسم المستخدم</TableHead>
+                    <TableHead>الدور</TableHead>
+                    <TableHead>تاريخ الإنشاء</TableHead>
+                    <TableHead>آخر تحديث</TableHead>
+                    <TableHead>الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.username}</TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === 'admin' ? 'default' : user.role === 'doctor' ? 'secondary' : 'outline'}>
+                          {user.role === 'admin' ? 'مدير' : user.role === 'doctor' ? 'دكتور' : 'موظف تذاكر'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString('ar-EG')}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.updated_at).toLocaleDateString('ar-EG')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setUsername(user.username);
+                              setNewPassword('');
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {user.username !== 'admin' && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => deleteUser(user.id, user.username)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {users.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  لا يوجد مستخدمين
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

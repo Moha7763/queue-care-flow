@@ -54,6 +54,7 @@ const Doctor = () => {
     mri: []
   });
   const [loading, setLoading] = useState(false);
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const { toast } = useToast();
 
   const login = async (e: React.FormEvent) => {
@@ -67,8 +68,10 @@ const Doctor = () => {
         .eq('role', 'doctor');
       
       if (users && users.length > 0) {
-        // In a real implementation, you'd verify the password hash here
-        if (password === users[0].password_hash) {
+        // Hash the input password and compare
+        const { data: hashedPassword } = await supabase.rpc('hash_password', { password });
+        
+        if (hashedPassword === users[0].password_hash) {
           setIsAuthenticated(true);
           loadTickets();
           toast({
@@ -131,6 +134,8 @@ const Doctor = () => {
   };
 
   const nextPatient = async (examType: ExamType) => {
+    if (actionInProgress) return;
+    
     setLoading(true);
     try {
       const currentTickets = tickets[examType];
@@ -167,6 +172,7 @@ const Doctor = () => {
       }
 
       loadTickets();
+      setActionInProgress(null);
     } catch (error) {
       toast({
         title: "خطأ في استدعاء المريض التالي",
@@ -209,6 +215,7 @@ const Doctor = () => {
         });
       }
 
+      setActionInProgress('postponed');
       loadTickets();
     } catch (error) {
       toast({
@@ -233,6 +240,7 @@ const Doctor = () => {
         description: "تم إكمال فحص المريض بنجاح"
       });
 
+      setActionInProgress('completed');
       loadTickets();
     } catch (error) {
       toast({
@@ -254,6 +262,7 @@ const Doctor = () => {
         description: "تم إلغاء فحص المريض"
       });
 
+      setActionInProgress('cancelled');
       loadTickets();
     } catch (error) {
       toast({
@@ -386,31 +395,31 @@ const Doctor = () => {
                         <Badge className="bg-current text-xs sm:text-sm">المريض الحالي</Badge>
                         <span className="font-bold text-sm sm:text-lg">{currentPatient.ticket_number}</span>
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
-                          size="sm"
+                          size="lg"
                           onClick={() => completePatient(currentPatient.id)}
-                          className="flex-1 text-xs"
+                          className="flex-1 h-12 text-sm font-semibold"
                         >
-                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <CheckCircle className="w-5 h-5 mr-2" />
                           إكمال
                         </Button>
                         <Button
-                          size="sm"
+                          size="lg"
                           variant="outline"
                           onClick={() => postponePatient(currentPatient.id, type as ExamType)}
-                          className="flex-1 text-xs"
+                          className="flex-1 h-12 text-sm font-semibold"
                         >
-                          <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <Clock className="w-5 h-5 mr-2" />
                           تأجيل
                         </Button>
                         <Button
-                          size="sm"
+                          size="lg"
                           variant="destructive"
                           onClick={() => cancelPatient(currentPatient.id)}
-                          className="flex-1 text-xs"
+                          className="flex-1 h-12 text-sm font-semibold"
                         >
-                          <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <XCircle className="w-5 h-5 mr-2" />
                           إلغاء
                         </Button>
                       </div>
@@ -424,10 +433,10 @@ const Doctor = () => {
                   {/* Next Patient Button */}
                   <Button
                     onClick={() => nextPatient(type as ExamType)}
-                    disabled={loading || waitingPatients.length === 0}
-                    className="w-full"
+                    disabled={loading || waitingPatients.length === 0 || !actionInProgress}
+                    className="w-full h-12 text-sm font-semibold"
                   >
-                    <ChevronRight className="w-4 h-4 mr-2" />
+                    <ChevronRight className="w-5 h-5 mr-2" />
                     المريض التالي
                     {waitingPatients.length > 0 && ` (${waitingPatients[0].ticket_number})`}
                   </Button>

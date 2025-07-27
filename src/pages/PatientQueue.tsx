@@ -40,8 +40,10 @@ const PatientQueue = () => {
         .eq('role', 'staff');
       
       if (users && users.length > 0) {
-        // In a real implementation, you'd verify the password hash here
-        if (password === users[0].password_hash) {
+        // Hash the input password and compare
+        const { data: hashedPassword } = await supabase.rpc('hash_password', { password });
+        
+        if (hashedPassword === users[0].password_hash) {
           setIsAuthenticated(true);
           loadCurrentTickets();
           toast({
