@@ -433,7 +433,7 @@ const Doctor = () => {
                   {/* Next Patient Button */}
                   <Button
                     onClick={() => nextPatient(type as ExamType)}
-                    disabled={loading || waitingPatients.length === 0 || !actionInProgress}
+                    disabled={loading || waitingPatients.length === 0 || !!actionInProgress}
                     className="w-full h-12 text-sm font-semibold"
                   >
                     <ChevronRight className="w-5 h-5 mr-2" />
