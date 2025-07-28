@@ -108,7 +108,7 @@ const Doctor = () => {
         .from('tickets')
         .select('*')
         .eq('date', today)
-        .in('status', ['waiting', 'current', 'postponed'])
+        .in('status', ['waiting', 'current', 'postponed', 'cancelled'])
         .order('created_at');
 
       if (data) {
@@ -184,20 +184,23 @@ const Doctor = () => {
   };
 
   const postponePatient = async (ticketId: string, examType: ExamType) => {
+    if (actionInProgress) return;
+    
+    setActionInProgress(ticketId);
     try {
       const ticket = tickets[examType].find(t => t.id === ticketId);
       if (!ticket) return;
 
       if (ticket.postpone_count >= 4) {
-        // Cancel if postponed 5 times
+        // Cancel if postponed 5 times (this will be the 5th postpone)
         await supabase
           .from('tickets')
           .update({ status: 'cancelled' })
           .eq('id', ticketId);
         
         toast({
-          title: "تم إلغاء التذكرة",
-          description: "تم تأجيل الحالة 5 مرات",
+          title: "تم إلغاء التذكرة نهائياً",
+          description: "تم تأجيل الحالة 5 مرات - تم الإلغاء النهائي",
           variant: "destructive"
         });
       } else {
@@ -209,19 +212,21 @@ const Doctor = () => {
           })
           .eq('id', ticketId);
 
+        const newCount = ticket.postpone_count + 1;
         toast({
           title: "تم تأجيل المريض",
-          description: `المرة ${ticket.postpone_count + 1} من 5`
+          description: `المرة ${newCount} من 5 ${newCount === 4 ? '- التأجيل القادم سيؤدي للإلغاء النهائي' : ''}`
         });
       }
 
       loadTickets();
-      setActionInProgress(null);
     } catch (error) {
       toast({
         title: "خطأ في تأجيل المريض",
         variant: "destructive"
       });
+    } finally {
+      setActionInProgress(null);
     }
   };
 
@@ -297,9 +302,9 @@ const Doctor = () => {
     if (isAuthenticated) {
       loadTickets();
       
-      // Set up real-time subscription
+      // Set up real-time subscription with improved handling
       const channel = supabase
-        .channel('doctor-tickets')
+        .channel('doctor-tickets-realtime')
         .on(
           'postgres_changes',
           {
@@ -307,14 +312,24 @@ const Doctor = () => {
             schema: 'public',
             table: 'tickets'
           },
-          () => {
-            loadTickets();
+          (payload) => {
+            console.log('Real-time update received:', payload);
+            // Reload tickets immediately when any change occurs
+            setTimeout(() => loadTickets(), 100);
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Doctor realtime subscription status:', status);
+        });
+
+      // Also refresh every 3 seconds as backup
+      const interval = setInterval(() => {
+        loadTickets();
+      }, 3000);
 
       return () => {
         supabase.removeChannel(channel);
+        clearInterval(interval);
       };
     }
   }, [isAuthenticated]);
@@ -381,6 +396,7 @@ const Doctor = () => {
             const currentPatient = examTickets.find(t => t.status === 'current');
             const waitingPatients = examTickets.filter(t => t.status === 'waiting').sort((a, b) => a.ticket_number - b.ticket_number);
             const postponedPatients = examTickets.filter(t => t.status === 'postponed');
+            const cancelledPatients = examTickets.filter(t => t.status === 'cancelled');
 
             return (
               <Card key={type}>
@@ -487,10 +503,35 @@ const Doctor = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Cancelled Patients */}
+                  {cancelledPatients.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-xs sm:text-sm">ملغاة ({cancelledPatients.length})</h4>
+                      <div className="max-h-20 overflow-y-auto space-y-1">
+                        {cancelledPatients.slice(-3).map((ticket) => (
+                          <div key={ticket.id} className="flex items-center justify-between p-2 bg-cancelled/10 rounded">
+                            <span className="font-medium text-xs sm:text-sm">{ticket.ticket_number}</span>
+                            <Badge variant="outline" className="text-cancelled text-xs">
+                              ملغاة
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
           })}
+        </div>
+
+        {/* Live indicator */}
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            تحديث مباشر - آخر تحديث: {new Date().toLocaleTimeString('ar-EG')}
+          </div>
         </div>
       </div>
     </div>

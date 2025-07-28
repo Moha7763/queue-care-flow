@@ -75,9 +75,9 @@ const Display = () => {
   useEffect(() => {
     loadTickets();
     
-    // Set up real-time subscription for automatic updates
+    // Set up real-time subscription with improved handling
     const channel = supabase
-      .channel('display-tickets')
+      .channel('display-tickets-realtime')
       .on(
         'postgres_changes',
         {
@@ -85,14 +85,20 @@ const Display = () => {
           schema: 'public',
           table: 'tickets'
         },
-        () => {
-          loadTickets();
+        (payload) => {
+          console.log('Display real-time update received:', payload);
+          // Reload tickets immediately when any change occurs
+          setTimeout(() => loadTickets(), 100);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Display realtime subscription status:', status);
+      });
 
-    // Auto refresh every 10 seconds
-    const interval = setInterval(loadTickets, 10000);
+    // Auto refresh every 2 seconds as backup for fast updates
+    const interval = setInterval(() => {
+      loadTickets();
+    }, 2000);
 
     return () => {
       supabase.removeChannel(channel);
