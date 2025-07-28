@@ -215,8 +215,8 @@ const Doctor = () => {
         });
       }
 
-      setActionInProgress('postponed');
       loadTickets();
+      setActionInProgress(null);
     } catch (error) {
       toast({
         title: "خطأ في تأجيل المريض",
@@ -240,8 +240,8 @@ const Doctor = () => {
         description: "تم إكمال فحص المريض بنجاح"
       });
 
-      setActionInProgress('completed');
       loadTickets();
+      setActionInProgress(null);
     } catch (error) {
       toast({
         title: "خطأ في إكمال الفحص",
@@ -262,8 +262,8 @@ const Doctor = () => {
         description: "تم إلغاء فحص المريض"
       });
 
-      setActionInProgress('cancelled');
       loadTickets();
+      setActionInProgress(null);
     } catch (error) {
       toast({
         title: "خطأ في إلغاء الفحص",
@@ -395,33 +395,35 @@ const Doctor = () => {
                         <Badge className="bg-current text-xs sm:text-sm">المريض الحالي</Badge>
                         <span className="font-bold text-sm sm:text-lg">{currentPatient.ticket_number}</span>
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="grid grid-cols-1 gap-2">
                         <Button
-                          size="lg"
+                          size="sm"
                           onClick={() => completePatient(currentPatient.id)}
-                          className="flex-1 h-12 text-sm font-semibold"
+                          className="w-full h-10 text-xs font-semibold"
                         >
-                          <CheckCircle className="w-5 h-5 mr-2" />
+                          <CheckCircle className="w-4 h-4 mr-1" />
                           إكمال
                         </Button>
-                        <Button
-                          size="lg"
-                          variant="outline"
-                          onClick={() => postponePatient(currentPatient.id, type as ExamType)}
-                          className="flex-1 h-12 text-sm font-semibold"
-                        >
-                          <Clock className="w-5 h-5 mr-2" />
-                          تأجيل
-                        </Button>
-                        <Button
-                          size="lg"
-                          variant="destructive"
-                          onClick={() => cancelPatient(currentPatient.id)}
-                          className="flex-1 h-12 text-sm font-semibold"
-                        >
-                          <XCircle className="w-5 h-5 mr-2" />
-                          إلغاء
-                        </Button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => postponePatient(currentPatient.id, type as ExamType)}
+                            className="h-10 text-xs font-semibold"
+                          >
+                            <Clock className="w-4 h-4 mr-1" />
+                            تأجيل
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => cancelPatient(currentPatient.id)}
+                            className="h-10 text-xs font-semibold"
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            إلغاء
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ) : (
