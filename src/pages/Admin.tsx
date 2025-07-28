@@ -598,6 +598,10 @@ const Admin = () => {
                             onClick={() => {
                               setUsername(user.username);
                               setNewPassword('');
+                              toast({
+                                title: "تم اختيار المستخدم",
+                                description: `تم اختيار ${user.username} للتعديل. اذهب لقسم تغيير كلمة المرور أعلاه.`
+                              });
                             }}
                           >
                             <Edit className="w-4 h-4" />
