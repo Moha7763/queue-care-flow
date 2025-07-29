@@ -162,7 +162,7 @@ const PatientQueue = () => {
 
   const generateQRCode = (ticketNumber: number, examType: ExamType): string => {
     const patientUrl = `${window.location.origin}/patient?ticket=${ticketNumber}&type=${examType}&date=${new Date().toISOString().split('T')[0]}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(patientUrl)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&format=png&data=${encodeURIComponent(patientUrl)}`;
   };
 
   const printTicket = (ticketNumber: number, examType: ExamType) => {
