@@ -32,6 +32,15 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    /* Medical exam colors - same as dark mode for consistency */
+    --xray: 210 100% 45%;
+    --ultrasound: 280 100% 60%;
+    --ct: 25 100% 50%;
+    --mri: 160 100% 35%;
+    --waiting: 45 100% 55%;
+    --current: 120 100% 35%;
+    --postponed: 0 100% 50%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
@@ -92,6 +101,15 @@ All colors MUST be HSL.
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+
+    /* Medical exam colors */
+    --xray: 210 100% 45%;
+    --ultrasound: 280 100% 60%;
+    --ct: 25 100% 50%;
+    --mri: 160 100% 35%;
+    --waiting: 45 100% 55%;
+    --current: 120 100% 35%;
+    --postponed: 0 100% 50%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;

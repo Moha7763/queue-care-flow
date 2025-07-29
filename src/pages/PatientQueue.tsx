@@ -77,12 +77,28 @@ const PatientQueue = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // Get daily settings
-      const { data: settingsData } = await supabase
+      // Get or create daily settings with random start numbers
+      let settingsData;
+      const { data: existingSettings } = await supabase
         .from('daily_settings')
         .select('*')
         .eq('date', today)
         .single();
+
+      if (!existingSettings) {
+        // Generate random start numbers for the day
+        await supabase.rpc('generate_random_start_numbers');
+        
+        const { data: newSettings } = await supabase
+          .from('daily_settings')
+          .select('*')
+          .eq('date', today)
+          .single();
+        
+        settingsData = newSettings;
+      } else {
+        settingsData = existingSettings;
+      }
 
       let startNumber = 1;
       if (settingsData) {
@@ -145,33 +161,29 @@ const PatientQueue = () => {
   };
 
   const generateQRCode = (ticketNumber: number, examType: ExamType): string => {
-    const data = JSON.stringify({
-      ticket: ticketNumber,
-      type: examType,
-      date: new Date().toISOString().split('T')[0],
-      center: 'الحياة للأشعة'
-    });
-    return `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(data)}`;
+    const patientUrl = `${window.location.origin}/patient?ticket=${ticketNumber}&type=${examType}&date=${new Date().toISOString().split('T')[0]}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(patientUrl)}`;
   };
 
   const printTicket = (ticketNumber: number, examType: ExamType) => {
     const prefix = getExamPrefix(examType);
     const qrCodeUrl = generateQRCode(ticketNumber, examType);
     
-    const printContent = `
-      <div class="print-ticket">
-        <h2 style="margin: 10px 0; font-size: 18px; font-weight: bold;">مركز الحياة للأشعة</h2>
-        <div style="margin: 15px 0;">
-          <div style="font-size: 16px; margin: 5px 0;">${examTypes[examType]}</div>
-          <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">${prefix}${ticketNumber}</div>
+      const printContent = `
+        <div class="print-ticket">
+          <h2 style="margin: 10px 0; font-size: 18px; font-weight: bold;">مركز الحياة للأشعة</h2>
           <div style="margin: 15px 0;">
-            <img src="${qrCodeUrl}" alt="QR Code" style="max-width: 100px;" />
+            <div style="font-size: 16px; margin: 5px 0;">${examTypes[examType]}</div>
+            <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">${prefix}${ticketNumber}</div>
+            <div style="margin: 15px 0;">
+              <img src="${qrCodeUrl}" alt="QR Code" style="max-width: 120px;" />
+            </div>
+            <div style="font-size: 10px; margin: 3px 0; color: #666;">امسح الكود لمتابعة دورك</div>
+            <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleDateString('ar-EG')}</div>
+            <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleTimeString('ar-EG')}</div>
           </div>
-          <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleDateString('ar-EG')}</div>
-          <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleTimeString('ar-EG')}</div>
         </div>
-      </div>
-    `;
+      `;
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
