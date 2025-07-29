@@ -169,21 +169,21 @@ const PatientQueue = () => {
     const prefix = getExamPrefix(examType);
     const qrCodeUrl = generateQRCode(ticketNumber, examType);
     
-      const printContent = `
-        <div class="print-ticket">
-          <h2 style="margin: 10px 0; font-size: 18px; font-weight: bold;">مركز الحياة للأشعة</h2>
+    const printContent = `
+      <div class="print-ticket">
+        <h2 style="margin: 10px 0; font-size: 18px; font-weight: bold;">مركز الحياة للأشعة</h2>
+        <div style="margin: 15px 0;">
+          <div style="font-size: 16px; margin: 5px 0;">${examTypes[examType]}</div>
+          <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">${prefix}${ticketNumber}</div>
           <div style="margin: 15px 0;">
-            <div style="font-size: 16px; margin: 5px 0;">${examTypes[examType]}</div>
-            <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">${prefix}${ticketNumber}</div>
-            <div style="margin: 15px 0;">
-              <img src="${qrCodeUrl}" alt="QR Code" style="max-width: 120px;" />
-            </div>
-            <div style="font-size: 10px; margin: 3px 0; color: #666;">امسح الكود لمتابعة دورك</div>
-            <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleDateString('ar-EG')}</div>
-            <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleTimeString('ar-EG')}</div>
+            <img src="${qrCodeUrl}" alt="QR Code" style="width: 150px; height: 150px; display: block; margin: 0 auto;" crossOrigin="anonymous" />
           </div>
+          <div style="font-size: 10px; margin: 3px 0; color: #666;">امسح الكود لمتابعة دورك</div>
+          <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleDateString('ar-EG')}</div>
+          <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleTimeString('ar-EG')}</div>
         </div>
-      `;
+      </div>
+    `;
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -194,20 +194,28 @@ const PatientQueue = () => {
             <style>
               body { margin: 0; padding: 20px; font-family: 'Courier New', monospace; }
               .print-ticket { text-align: center; max-width: 300px; margin: 0 auto; }
+              img { max-width: 100%; height: auto; }
               @media print {
                 body { margin: 0; padding: 0; }
                 .print-ticket { padding: 10px; }
+                img { max-width: 150px !important; height: 150px !important; }
               }
             </style>
           </head>
           <body>
             ${printContent}
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  window.close();
+                }, 1000);
+              };
+            </script>
           </body>
         </html>
       `);
       printWindow.document.close();
-      printWindow.print();
-      printWindow.close();
     }
   };
 
