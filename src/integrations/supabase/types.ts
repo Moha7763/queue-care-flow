@@ -144,6 +144,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_random_start_numbers: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       hash_password: {
         Args: { password: string }
         Returns: string
