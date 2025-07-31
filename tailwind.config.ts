@@ -63,16 +63,17 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				// Medical device colors
-				'xray': 'hsl(var(--xray-color))',
-				'ultrasound': 'hsl(var(--ultrasound-color))',
-				'ct': 'hsl(var(--ct-color))',
-				'mri': 'hsl(var(--mri-color))',
+				'xray-color': 'hsl(var(--xray-color))',
+				'ultrasound-color': 'hsl(var(--ultrasound-color))',
+				'ct-color': 'hsl(var(--ct-color))',
+				'mri-color': 'hsl(var(--mri-color))',
+				'ct-scan-color': 'hsl(var(--ct-color))',
 				// Status colors
-				'waiting': 'hsl(var(--waiting-color))',
-				'current': 'hsl(var(--current-color))',
-				'postponed': 'hsl(var(--postponed-color))',
-				'completed': 'hsl(var(--completed-color))',
-				'cancelled': 'hsl(var(--cancelled-color))'
+				'waiting-color': 'hsl(var(--waiting-color))',
+				'current-color': 'hsl(var(--current-color))',
+				'postponed-color': 'hsl(var(--postponed-color))',
+				'completed-color': 'hsl(var(--completed-color))',
+				'cancelled-color': 'hsl(var(--cancelled-color))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

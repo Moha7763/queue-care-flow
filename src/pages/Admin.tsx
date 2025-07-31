@@ -46,6 +46,12 @@ const Admin = () => {
   const [newUserRole, setNewUserRole] = useState('staff');
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dailySettings, setDailySettings] = useState({
+    xray_start_number: 1,
+    ultrasound_start_number: 1,
+    ct_scan_start_number: 1,
+    mri_start_number: 1
+  });
   const { toast } = useToast();
 
   const login = async (e: React.FormEvent) => {
@@ -176,6 +182,54 @@ const Admin = () => {
       toast({
         title: "خطأ في تحميل المستخدمين",
         description: "فشل في تحميل قائمة المستخدمين",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadDailySettings = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: settings } = await supabase
+        .from('daily_settings')
+        .select('*')
+        .eq('date', today)
+        .maybeSingle();
+
+      if (settings) {
+        setDailySettings({
+          xray_start_number: settings.xray_start_number,
+          ultrasound_start_number: settings.ultrasound_start_number,
+          ct_scan_start_number: settings.ct_scan_start_number,
+          mri_start_number: settings.mri_start_number
+        });
+      }
+    } catch (error) {
+      console.error('Error loading daily settings:', error);
+    }
+  };
+
+  const updateDailySettings = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { error } = await supabase
+        .from('daily_settings')
+        .upsert({
+          date: today,
+          ...dailySettings
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "تم تحديث إعدادات اليوم",
+        description: "تم تحديث أرقام البداية بنجاح"
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ في التحديث",
+        description: "فشل في تحديث إعدادات اليوم",
         variant: "destructive"
       });
     }
@@ -312,6 +366,38 @@ const Admin = () => {
     if (isAuthenticated) {
       loadStats();
       loadUsers();
+      loadDailySettings();
+      
+      // Set up real-time subscription for automatic updates
+      const channel = supabase
+        .channel('admin-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tickets'
+          },
+          () => {
+            loadStats();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'daily_settings'
+          },
+          () => {
+            loadDailySettings();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAuthenticated]);
 
@@ -466,6 +552,86 @@ const Admin = () => {
                 <p className="text-3xl font-bold text-primary">{stats.mri}</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Daily Settings */}
+        <Card className="bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <Activity className="w-5 h-5" />
+              إعدادات أرقام البداية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="xray_start">أشعة عادية - رقم البداية</Label>
+                <Input
+                  id="xray_start"
+                  type="number"
+                  min="1"
+                  max="999"
+                  value={dailySettings.xray_start_number}
+                  onChange={(e) => setDailySettings(prev => ({
+                    ...prev,
+                    xray_start_number: parseInt(e.target.value) || 1
+                  }))}
+                  className="border-xray-color/30 focus:border-xray-color"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ultrasound_start">سونار - رقم البداية</Label>
+                <Input
+                  id="ultrasound_start"
+                  type="number"
+                  min="1"
+                  max="999"
+                  value={dailySettings.ultrasound_start_number}
+                  onChange={(e) => setDailySettings(prev => ({
+                    ...prev,
+                    ultrasound_start_number: parseInt(e.target.value) || 1
+                  }))}
+                  className="border-ultrasound-color/30 focus:border-ultrasound-color"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ct_start">مقطعية - رقم البداية</Label>
+                <Input
+                  id="ct_start"
+                  type="number"
+                  min="1"
+                  max="999"
+                  value={dailySettings.ct_scan_start_number}
+                  onChange={(e) => setDailySettings(prev => ({
+                    ...prev,
+                    ct_scan_start_number: parseInt(e.target.value) || 1
+                  }))}
+                  className="border-ct-color/30 focus:border-ct-color"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mri_start">رنين مغناطيسي - رقم البداية</Label>
+                <Input
+                  id="mri_start"
+                  type="number"
+                  min="1"
+                  max="999"
+                  value={dailySettings.mri_start_number}
+                  onChange={(e) => setDailySettings(prev => ({
+                    ...prev,
+                    mri_start_number: parseInt(e.target.value) || 1
+                  }))}
+                  className="border-mri-color/30 focus:border-mri-color"
+                />
+              </div>
+            </div>
+            <Button 
+              onClick={updateDailySettings} 
+              className="w-full mt-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            >
+              حفظ إعدادات اليوم
+            </Button>
           </CardContent>
         </Card>
 

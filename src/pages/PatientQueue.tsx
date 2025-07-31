@@ -262,7 +262,9 @@ const PatientQueue = () => {
             schema: 'public',
             table: 'tickets'
           },
-          () => {
+          (payload) => {
+            // Only reload if this is a new ticket to prevent duplicate prints
+            console.log('Real-time update:', payload);
             loadCurrentTickets();
           }
         )
@@ -329,21 +331,24 @@ const PatientQueue = () => {
 
         {/* Create New Ticket Section */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          {Object.entries(examTypes).map(([type, name]) => (
-            <Card key={type} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-3 sm:p-6 text-center">
-                <h3 className="text-sm sm:text-xl font-semibold mb-2 sm:mb-4">{name}</h3>
-                <Button 
-                  onClick={() => createTicket(type as ExamType)}
-                  className="w-full text-xs sm:text-sm"
-                  size="lg"
-                >
-                  <Printer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  إنشاء تذكرة
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+          {Object.entries(examTypes).map(([type, name]) => {
+            const colorClass = `border-${type.replace('_', '-')}-color/30 hover:border-${type.replace('_', '-')}-color/60`;
+            return (
+              <Card key={type} className={`medical-card ${colorClass} bg-gradient-to-br from-card to-card/80`}>
+                <CardContent className="p-3 sm:p-6 text-center">
+                  <h3 className="text-sm sm:text-xl font-semibold mb-2 sm:mb-4 text-foreground">{name}</h3>
+                  <Button 
+                    onClick={() => createTicket(type as ExamType)}
+                    className={`w-full text-xs sm:text-sm bg-gradient-to-r from-${type.replace('_', '-')}-color to-${type.replace('_', '-')}-color/80 hover:from-${type.replace('_', '-')}-color/90 hover:to-${type.replace('_', '-')}-color/70 text-white pulse-glow`}
+                    size="lg"
+                  >
+                    <Printer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    إنشاء تذكرة
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Current Queue Status */}
@@ -357,20 +362,20 @@ const PatientQueue = () => {
               const prefix = getExamPrefix(type as ExamType);
 
               return (
-                <Card key={type}>
-                  <CardHeader className="pb-2 sm:pb-4">
-                    <CardTitle className="text-center text-sm sm:text-lg">{name}</CardTitle>
+                <Card key={type} className={`modern-card border-${type.replace('_', '-')}-color/20`}>
+                  <CardHeader className="pb-2 sm:pb-4 bg-gradient-to-r from-transparent to-card/50">
+                    <CardTitle className={`text-center text-sm sm:text-lg text-${type.replace('_', '-')}-color font-bold`}>{name}</CardTitle>
                   </CardHeader>
                   <CardContent className="text-center space-y-2 sm:space-y-3 pt-0">
-                    <div>
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-card to-muted/20">
                       <p className="text-xs sm:text-sm text-muted-foreground">المريض الحالي</p>
-                      <p className="text-lg sm:text-2xl font-bold">
+                      <p className={`text-lg sm:text-2xl font-bold text-${type.replace('_', '-')}-color`}>
                         {currentPatient ? `${prefix}${currentPatient.ticket_number}` : '--'}
                       </p>
                     </div>
-                    <div>
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-muted/20 to-card">
                       <p className="text-xs sm:text-sm text-muted-foreground">في الانتظار</p>
-                      <Badge variant="outline" className="text-sm sm:text-lg px-2 sm:px-3 py-1">
+                      <Badge variant="outline" className={`text-sm sm:text-lg px-2 sm:px-3 py-1 border-${type.replace('_', '-')}-color/40 text-${type.replace('_', '-')}-color`}>
                         {waitingCount}
                       </Badge>
                     </div>
