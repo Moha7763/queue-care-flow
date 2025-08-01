@@ -8,124 +8,124 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 15% 15%;
+    --background: 210 15% 98%;
+    --foreground: 210 10% 25%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
+    --card-foreground: 210 10% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
+    --popover-foreground: 210 10% 25%;
 
-    --primary: 210 85% 45%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 210 40% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 30% 93%;
-    --secondary-foreground: 220 15% 25%;
+    --secondary: 210 20% 90%;
+    --secondary-foreground: 210 10% 30%;
 
-    --muted: 210 25% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 15% 95%;
+    --muted-foreground: 210 10% 55%;
 
-    --accent: 210 30% 93%;
-    --accent-foreground: 220 15% 25%;
+    --accent: 210 20% 90%;
+    --accent-foreground: 210 10% 30%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 60% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Modern medical colors */
-    --xray: 210 85% 45%;
-    --ultrasound: 160 75% 40%;
-    --ct: 25 85% 50%;
-    --mri: 280 70% 50%;
-    --waiting: 45 85% 55%;
-    --current: 120 75% 40%;
-    --postponed: 15 85% 55%;
+    /* Soft medical colors */
+    --xray: 210 40% 60%;
+    --ultrasound: 160 30% 50%;
+    --ct: 25 40% 55%;
+    --mri: 280 30% 55%;
+    --waiting: 45 40% 60%;
+    --current: 120 30% 50%;
+    --postponed: 15 40% 60%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 210 85% 45%;
+    --border: 210 20% 85%;
+    --input: 210 20% 90%;
+    --ring: 210 40% 50%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Medical device type colors */
-    --xray-color: 210 85% 45%;
-    --ultrasound-color: 160 75% 40%;
-    --ct-color: 25 85% 50%;
-    --mri-color: 280 70% 50%;
+    /* Medical device type colors - softer */
+    --xray-color: 210 40% 60%;
+    --ultrasound-color: 160 30% 50%;
+    --ct-color: 25 40% 55%;
+    --mri-color: 280 30% 55%;
 
-    /* Status colors */
-    --waiting-color: 45 85% 55%;
-    --current-color: 120 75% 40%;
-    --postponed-color: 15 85% 55%;
-    --completed-color: 120 75% 40%;
-    --cancelled-color: 0 84% 60%;
+    /* Status colors - softer */
+    --waiting-color: 45 40% 60%;
+    --current-color: 120 30% 50%;
+    --postponed-color: 15 40% 60%;
+    --completed-color: 120 30% 50%;
+    --cancelled-color: 0 60% 55%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 85% 45%), hsl(210 85% 35%));
-    --gradient-secondary: linear-gradient(135deg, hsl(210 30% 93%), hsl(220 25% 88%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 25% 98%));
+    /* Subtle gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(210 40% 50%), hsl(210 35% 45%));
+    --gradient-secondary: linear-gradient(135deg, hsl(210 20% 90%), hsl(210 15% 88%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 15% 98%));
 
-    --sidebar-background: 210 30% 95%;
-    --sidebar-foreground: 220 15% 25%;
-    --sidebar-primary: 210 85% 45%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 25% 90%;
-    --sidebar-accent-foreground: 220 15% 25%;
-    --sidebar-border: 210 25% 85%;
-    --sidebar-ring: 210 85% 45%;
+    --sidebar-background: 210 20% 95%;
+    --sidebar-foreground: 210 10% 30%;
+    --sidebar-primary: 210 40% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 85%;
+    --sidebar-accent-foreground: 210 10% 30%;
+    --sidebar-border: 210 15% 80%;
+    --sidebar-ring: 210 40% 50%;
   }
 
   .dark {
-    --background: 220 25% 8%;
-    --foreground: 210 40% 95%;
+    --background: 210 15% 12%;
+    --foreground: 210 15% 85%;
 
-    --card: 220 25% 12%;
-    --card-foreground: 210 40% 95%;
+    --card: 210 15% 15%;
+    --card-foreground: 210 15% 85%;
 
-    --popover: 220 25% 12%;
-    --popover-foreground: 210 40% 95%;
+    --popover: 210 15% 15%;
+    --popover-foreground: 210 15% 85%;
 
-    --primary: 210 85% 55%;
-    --primary-foreground: 220 25% 8%;
+    --primary: 210 40% 60%;
+    --primary-foreground: 210 15% 12%;
 
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 210 40% 95%;
+    --secondary: 210 15% 20%;
+    --secondary-foreground: 210 15% 85%;
 
-    --muted: 220 20% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 210 15% 20%;
+    --muted-foreground: 210 15% 65%;
 
-    --accent: 220 20% 18%;
-    --accent-foreground: 210 40% 95%;
+    --accent: 210 15% 20%;
+    --accent-foreground: 210 15% 85%;
 
-    --destructive: 0 75% 60%;
-    --destructive-foreground: 210 40% 95%;
+    --destructive: 0 60% 60%;
+    --destructive-foreground: 210 15% 85%;
 
-    /* Modern medical colors for dark mode */
-    --xray: 210 85% 55%;
-    --ultrasound: 160 75% 50%;
-    --ct: 25 85% 60%;
-    --mri: 280 70% 60%;
-    --waiting: 45 85% 65%;
-    --current: 120 75% 50%;
-    --postponed: 15 85% 65%;
+    /* Soft medical colors for dark mode */
+    --xray: 210 40% 65%;
+    --ultrasound: 160 30% 55%;
+    --ct: 25 40% 60%;
+    --mri: 280 30% 60%;
+    --waiting: 45 40% 65%;
+    --current: 120 30% 55%;
+    --postponed: 15 40% 65%;
 
-    --border: 220 20% 22%;
-    --input: 220 20% 22%;
-    --ring: 210 85% 55%;
+    --border: 210 15% 25%;
+    --input: 210 15% 25%;
+    --ring: 210 40% 60%;
 
-    /* Gradients for dark mode */
-    --gradient-primary: linear-gradient(135deg, hsl(210 85% 55%), hsl(210 85% 45%));
-    --gradient-secondary: linear-gradient(135deg, hsl(220 20% 18%), hsl(220 25% 15%));
-    --gradient-card: linear-gradient(135deg, hsl(220 25% 12%), hsl(220 20% 10%));
+    /* Subtle gradients for dark mode */
+    --gradient-primary: linear-gradient(135deg, hsl(210 40% 60%), hsl(210 35% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(210 15% 20%), hsl(210 20% 18%));
+    --gradient-card: linear-gradient(135deg, hsl(210 15% 15%), hsl(210 10% 13%));
 
-    --sidebar-background: 220 25% 10%;
-    --sidebar-foreground: 210 40% 95%;
-    --sidebar-primary: 210 85% 55%;
-    --sidebar-primary-foreground: 220 25% 8%;
-    --sidebar-accent: 220 20% 15%;
-    --sidebar-accent-foreground: 210 40% 95%;
-    --sidebar-border: 220 20% 20%;
-    --sidebar-ring: 210 85% 55%;
+    --sidebar-background: 210 15% 10%;
+    --sidebar-foreground: 210 15% 85%;
+    --sidebar-primary: 210 40% 60%;
+    --sidebar-primary-foreground: 210 15% 12%;
+    --sidebar-accent: 210 15% 18%;
+    --sidebar-accent-foreground: 210 15% 85%;
+    --sidebar-border: 210 15% 22%;
+    --sidebar-ring: 210 40% 60%;
   }
 }
 
@@ -136,36 +136,23 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    background: linear-gradient(135deg, hsl(var(--background)), hsl(220 25% 95%));
+    background: hsl(var(--background));
     min-height: 100vh;
+    font-family: system-ui, -apple-system, sans-serif;
   }
 
   .dark body {
-    background: linear-gradient(135deg, hsl(var(--background)), hsl(220 30% 5%));
+    background: hsl(var(--background));
   }
 }
 
-/* Modern card effects */
+/* Simple card effects */
 .modern-card {
-  @apply bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300;
+  @apply bg-card border border-border shadow-sm hover:shadow-md transition-all duration-200;
 }
 
 .medical-card {
-  @apply modern-card hover:scale-105 transform transition-all duration-200;
-}
-
-/* Animations */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 5px hsl(var(--primary) / 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.6), 0 0 30px hsl(var(--primary) / 0.3);
-  }
-}
-
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+  @apply modern-card hover:shadow-md transition-all duration-200;
 }
 
 /* Print styles for receipt tickets */

@@ -330,17 +330,16 @@ const PatientQueue = () => {
         </div>
 
         {/* Create New Ticket Section */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {Object.entries(examTypes).map(([type, name]) => {
-            const colorClass = `border-${type.replace('_', '-')}-color/30 hover:border-${type.replace('_', '-')}-color/60`;
             return (
-              <Card key={type} className={`medical-card ${colorClass} bg-gradient-to-br from-card to-card/80`}>
-                <CardContent className="p-3 sm:p-6 text-center">
-                  <h3 className="text-sm sm:text-xl font-semibold mb-2 sm:mb-4 text-foreground">{name}</h3>
+              <Card key={type} className="medical-card">
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <h3 className="text-sm sm:text-lg font-medium mb-3 sm:mb-4 text-foreground">{name}</h3>
                   <Button 
                     onClick={() => createTicket(type as ExamType)}
-                    className={`w-full text-xs sm:text-sm bg-gradient-to-r from-${type.replace('_', '-')}-color to-${type.replace('_', '-')}-color/80 hover:from-${type.replace('_', '-')}-color/90 hover:to-${type.replace('_', '-')}-color/70 text-white pulse-glow`}
-                    size="lg"
+                    className="w-full text-xs sm:text-sm"
+                    size="default"
                   >
                     <Printer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                     إنشاء تذكرة
@@ -353,8 +352,8 @@ const PatientQueue = () => {
 
         {/* Current Queue Status */}
         <div className="space-y-4 sm:space-y-6">
-          <h2 className="text-xl sm:text-2xl font-semibold text-center">الطابور الحالي</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <h2 className="text-lg sm:text-xl font-medium text-center">الطابور الحالي</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {Object.entries(examTypes).map(([type, name]) => {
               const examTickets = currentTickets[type as ExamType] || [];
               const currentPatient = examTickets.find(t => t.status === 'current');
@@ -362,20 +361,20 @@ const PatientQueue = () => {
               const prefix = getExamPrefix(type as ExamType);
 
               return (
-                <Card key={type} className={`modern-card border-${type.replace('_', '-')}-color/20`}>
-                  <CardHeader className="pb-2 sm:pb-4 bg-gradient-to-r from-transparent to-card/50">
-                    <CardTitle className={`text-center text-sm sm:text-lg text-${type.replace('_', '-')}-color font-bold`}>{name}</CardTitle>
+                <Card key={type} className="modern-card">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-center text-sm sm:text-base font-medium">{name}</CardTitle>
                   </CardHeader>
-                  <CardContent className="text-center space-y-2 sm:space-y-3 pt-0">
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-card to-muted/20">
-                      <p className="text-xs sm:text-sm text-muted-foreground">المريض الحالي</p>
-                      <p className={`text-lg sm:text-2xl font-bold text-${type.replace('_', '-')}-color`}>
+                  <CardContent className="text-center space-y-3 pt-0">
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1">المريض الحالي</p>
+                      <p className="text-lg sm:text-xl font-semibold text-foreground">
                         {currentPatient ? `${prefix}${currentPatient.ticket_number}` : '--'}
                       </p>
                     </div>
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-muted/20 to-card">
-                      <p className="text-xs sm:text-sm text-muted-foreground">في الانتظار</p>
-                      <Badge variant="outline" className={`text-sm sm:text-lg px-2 sm:px-3 py-1 border-${type.replace('_', '-')}-color/40 text-${type.replace('_', '-')}-color`}>
+                    <div className="p-2 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground mb-1">في الانتظار</p>
+                      <Badge variant="secondary" className="text-sm px-2 py-1">
                         {waitingCount}
                       </Badge>
                     </div>
