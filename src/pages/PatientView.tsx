@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, Clock, Users, Activity } from 'lucide-react';
 
 type ExamType = 'xray' | 'ultrasound' | 'ct_scan' | 'mri';
@@ -45,40 +46,67 @@ const PatientView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastStatus, setLastStatus] = useState<string>('');
+  const [newCaseCount, setNewCaseCount] = useState<number>(0);
+  const { toast } = useToast();
 
-  // Vibration and sound functions
-  const vibrate = () => {
+  // Enhanced vibration and sound functions
+  const vibrate = (pattern: number[] = [200, 100, 200, 100, 200]) => {
     if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200, 100, 200]);
+      navigator.vibrate(pattern);
+    }
+  };
+
+  const strongVibrate = () => {
+    if ('vibrate' in navigator) {
+      // Strong vibration pattern for your turn
+      navigator.vibrate([500, 200, 500, 200, 500, 200, 500]);
     }
   };
 
   const playNotificationSound = () => {
     try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+H30mwjBD2Y3PLLdSsFFXvN8d2OOAgaZb3u5qNPEAdRp+PwtmMcBjiO1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+H30mwjBD2Y3PLLdSsFBNat3a2Sf');
-      audio.play().catch(e => console.log('Could not play sound:', e));
+      // Create a longer, more noticeable sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.5);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
     } catch (e) {
       console.log('Sound not supported:', e);
     }
   };
 
-  // Get patient info from URL params
+  // Test vibration and sound function
+  const testVibrationAndSound = () => {
+    strongVibrate();
+    playNotificationSound();
+    toast({
+      title: "اختبار الاهتزاز والصوت",
+      description: "تم تشغيل الاهتزاز والصوت للاختبار"
+    });
+  };
+
+  // Get patient info from secure token
   const getPatientFromParams = () => {
-    const ticket = searchParams.get('ticket');
-    const type = searchParams.get('type');
-    const date = searchParams.get('date');
+    const token = searchParams.get('token');
     
-    if (!ticket || !type || !date) {
-      setError('معلومات التذكرة غير مكتملة');
+    if (!token) {
+      setError('رابط التذكرة غير صحيح');
       setLoading(false);
       return null;
     }
     
-    return {
-      ticketNumber: parseInt(ticket),
-      examType: type as ExamType,
-      date
-    };
+    return { secureToken: token };
   };
 
   const loadPatientStatus = async () => {
@@ -86,11 +114,24 @@ const PatientView = () => {
     if (!patientInfo) return;
 
     try {
+      // Find our ticket using secure token
+      const { data: ourTicket } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('secure_token', patientInfo.secureToken)
+        .single();
+
+      if (!ourTicket) {
+        setError('التذكرة غير موجودة أو انتهت صلاحيتها');
+        return;
+      }
+
+      // Get all tickets for the same exam type and date
       const { data: tickets } = await supabase
         .from('tickets')
         .select('*')
-        .eq('exam_type', patientInfo.examType)
-        .eq('date', patientInfo.date)
+        .eq('exam_type', ourTicket.exam_type)
+        .eq('date', ourTicket.date)
         .in('status', ['waiting', 'current', 'postponed'])
         .order('ticket_number');
 
@@ -99,28 +140,33 @@ const PatientView = () => {
         return;
       }
 
+      // Count new cases since last check
+      const currentNewCaseCount = tickets.filter(t => t.status === 'waiting').length;
+      if (newCaseCount > 0 && currentNewCaseCount > newCaseCount) {
+        // New case entered - light vibration
+        vibrate([100, 50, 100]);
+        toast({
+          title: "حالة جديدة",
+          description: "تم دخول حالة جديدة للطابور"
+        });
+      }
+      setNewCaseCount(currentNewCaseCount);
+
       // Find current patient
       const currentPatient = tickets.find(t => t.status === 'current');
       const currentPatientNumber = currentPatient?.ticket_number || null;
-
-      // Find our patient
-      const ourTicket = tickets.find(t => t.ticket_number === patientInfo.ticketNumber);
-      if (!ourTicket) {
-        setError('التذكرة غير موجودة أو تم الانتهاء منها');
-        return;
-      }
 
       // Calculate position in queue
       const waitingTickets = tickets
         .filter(t => t.status === 'waiting')
         .sort((a, b) => a.ticket_number - b.ticket_number);
       
-      const ourPosition = waitingTickets.findIndex(t => t.ticket_number === patientInfo.ticketNumber) + 1;
+      const ourPosition = waitingTickets.findIndex(t => t.ticket_number === ourTicket.ticket_number) + 1;
       const isCurrentPatient = ourTicket.status === 'current';
 
       const newPatientData: PatientData = {
-        ticketNumber: patientInfo.ticketNumber,
-        examType: patientInfo.examType,
+        ticketNumber: ourTicket.ticket_number,
+        examType: ourTicket.exam_type,
         status: ourTicket.status,
         position: isCurrentPatient ? 0 : ourPosition,
         totalWaiting: waitingTickets.length,
@@ -130,8 +176,13 @@ const PatientView = () => {
 
       // Check if it's our turn (status changed to current)
       if (lastStatus !== 'current' && newPatientData.isCurrentPatient) {
-        vibrate();
+        strongVibrate();
         playNotificationSound();
+        toast({
+          title: "🔔 دورك الآن!",
+          description: "يرجى التوجه إلى غرفة الفحص",
+          duration: 10000,
+        });
       }
 
       setPatientData(newPatientData);
@@ -173,7 +224,7 @@ const PatientView = () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [searchParams, lastStatus]);
+  }, [searchParams, lastStatus, newCaseCount]);
 
   if (loading) {
     return (
@@ -196,9 +247,14 @@ const PatientView = () => {
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h2 className="text-xl font-bold mb-2">خطأ</h2>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>
-              إعادة المحاولة
-            </Button>
+            <div className="space-y-2">
+              <Button onClick={() => window.location.reload()}>
+                إعادة المحاولة
+              </Button>
+              <Button onClick={testVibrationAndSound} variant="outline" className="w-full">
+                اختبار الاهتزاز والصوت
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -310,12 +366,15 @@ const PatientView = () => {
           </Card>
         )}
 
-        {/* Live indicator */}
-        <div className="text-center">
+        {/* Live indicator and test button */}
+        <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             تحديث مباشر
           </div>
+          <Button onClick={testVibrationAndSound} variant="outline" size="sm">
+            اختبار الاهتزاز والصوت
+          </Button>
         </div>
       </div>
     </div>

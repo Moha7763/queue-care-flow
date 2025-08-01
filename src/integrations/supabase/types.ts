@@ -79,6 +79,7 @@ export type Database = {
           exam_type: Database["public"]["Enums"]["exam_type"]
           id: string
           postpone_count: number
+          secure_token: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           ticket_number: number
           updated_at: string
@@ -90,6 +91,7 @@ export type Database = {
           exam_type: Database["public"]["Enums"]["exam_type"]
           id?: string
           postpone_count?: number
+          secure_token?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           ticket_number: number
           updated_at?: string
@@ -101,6 +103,7 @@ export type Database = {
           exam_type?: Database["public"]["Enums"]["exam_type"]
           id?: string
           postpone_count?: number
+          secure_token?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           ticket_number?: number
           updated_at?: string

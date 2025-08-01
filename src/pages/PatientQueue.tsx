@@ -132,8 +132,8 @@ const PatientQueue = () => {
       if (error) throw error;
 
       if (data) {
-        // Print the ticket
-        printTicket(data.ticket_number, examType);
+        // Print the ticket with secure token
+        printTicket(data.ticket_number, examType, data.secure_token);
         
         toast({
           title: "تم إنشاء التذكرة بنجاح",
@@ -160,14 +160,14 @@ const PatientQueue = () => {
     return prefixes[examType];
   };
 
-  const generateQRCode = (ticketNumber: number, examType: ExamType): string => {
-    const patientUrl = `${window.location.origin}/patient?ticket=${ticketNumber}&type=${examType}&date=${new Date().toISOString().split('T')[0]}`;
+  const generateQRCode = (ticketNumber: number, examType: ExamType, secureToken: string): string => {
+    const patientUrl = `${window.location.origin}/patient?token=${secureToken}`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&format=png&data=${encodeURIComponent(patientUrl)}`;
   };
 
-  const printTicket = (ticketNumber: number, examType: ExamType) => {
+  const printTicket = (ticketNumber: number, examType: ExamType, secureToken: string) => {
     const prefix = getExamPrefix(examType);
-    const qrCodeUrl = generateQRCode(ticketNumber, examType);
+    const qrCodeUrl = generateQRCode(ticketNumber, examType, secureToken);
     
     const printContent = `
       <div class="print-ticket">
