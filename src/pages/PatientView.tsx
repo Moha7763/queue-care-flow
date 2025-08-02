@@ -47,7 +47,55 @@ const PatientView = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastStatus, setLastStatus] = useState<string>('');
   const [newCaseCount, setNewCaseCount] = useState<number>(0);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const { toast } = useToast();
+
+  // Initialize audio context after user interaction
+  const initAudioContext = () => {
+    if (!audioContext && !userInteracted) {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      setAudioContext(ctx);
+      setUserInteracted(true);
+    }
+  };
+
+  // Prevent page closure
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'هل أنت متأكد من مغادرة الصفحة؟ ستفقد تنبيهات الطابور.';
+      return e.returnValue;
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Keep page active even when hidden
+        navigator.serviceWorker?.getRegistration().then(registration => {
+          if (registration) {
+            registration.showNotification('مركز الحياة للأشعة', {
+              body: 'النظام يعمل في الخلفية لتنبيهك عند دورك',
+              icon: '/favicon.ico',
+              tag: 'queue-status'
+            });
+          }
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Enhanced vibration and sound functions
   const vibrate = (pattern: number[] = [200, 100, 200, 100, 200]) => {
@@ -63,33 +111,61 @@ const PatientView = () => {
     }
   };
 
-  const playNotificationSound = () => {
+  const playNotificationSound = async () => {
     try {
-      // Create a longer, more noticeable sound
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      let ctx = audioContext;
+      if (!ctx) {
+        ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        setAudioContext(ctx);
+      }
       
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
       
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.5);
+      // Create multiple oscillators for richer sound
+      const oscillator1 = ctx.createOscillator();
+      const oscillator2 = ctx.createOscillator();
+      const gainNode = ctx.createGain();
       
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      oscillator1.connect(gainNode);
+      oscillator2.connect(gainNode);
+      gainNode.connect(ctx.destination);
       
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
+      // First tone
+      oscillator1.frequency.setValueAtTime(800, ctx.currentTime);
+      oscillator1.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.5);
+      
+      // Second harmony tone
+      oscillator2.frequency.setValueAtTime(1000, ctx.currentTime);
+      oscillator2.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.5);
+      
+      gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+      
+      oscillator1.start(ctx.currentTime);
+      oscillator1.stop(ctx.currentTime + 1);
+      oscillator2.start(ctx.currentTime);
+      oscillator2.stop(ctx.currentTime + 1);
+
+      // Show notification if page is hidden
+      if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('🔔 دورك الآن!', {
+          body: 'يرجى التوجه إلى غرفة الفحص',
+          icon: '/favicon.ico',
+          tag: 'your-turn'
+        });
+      }
     } catch (e) {
       console.log('Sound not supported:', e);
     }
   };
 
   // Test vibration and sound function
-  const testVibrationAndSound = () => {
+  const testVibrationAndSound = async () => {
+    initAudioContext();
     strongVibrate();
-    playNotificationSound();
+    await playNotificationSound();
     toast({
       title: "اختبار الاهتزاز والصوت",
       description: "تم تشغيل الاهتزاز والصوت للاختبار"
@@ -143,8 +219,9 @@ const PatientView = () => {
       // Count new cases since last check
       const currentNewCaseCount = tickets.filter(t => t.status === 'waiting').length;
       if (newCaseCount > 0 && currentNewCaseCount > newCaseCount) {
-        // New case entered - light vibration
+        // New case entered - light vibration and sound
         vibrate([100, 50, 100]);
+        await playNotificationSound();
         toast({
           title: "حالة جديدة",
           description: "تم دخول حالة جديدة للطابور"
@@ -177,7 +254,16 @@ const PatientView = () => {
       // Check if it's our turn (status changed to current)
       if (lastStatus !== 'current' && newPatientData.isCurrentPatient) {
         strongVibrate();
-        playNotificationSound();
+        await playNotificationSound();
+        
+        // Repeat alert every 10 seconds until acknowledged
+        const alertInterval = setInterval(async () => {
+          strongVibrate();
+          await playNotificationSound();
+        }, 10000);
+        
+        setTimeout(() => clearInterval(alertInterval), 60000); // Stop after 1 minute
+        
         toast({
           title: "🔔 دورك الآن!",
           description: "يرجى التوجه إلى غرفة الفحص",
@@ -366,15 +452,23 @@ const PatientView = () => {
           </Card>
         )}
 
-        {/* Live indicator and test button */}
+        {/* Live indicator and controls */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            تحديث مباشر
+            تحديث مباشر - الصفحة محمية من الإغلاق
           </div>
-          <Button onClick={testVibrationAndSound} variant="outline" size="sm">
-            اختبار الاهتزاز والصوت
-          </Button>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={testVibrationAndSound} variant="outline" size="sm">
+              اختبار الاهتزاز والصوت
+            </Button>
+            <Button onClick={initAudioContext} variant="outline" size="sm">
+              تفعيل الصوت
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            اضغط "تفعيل الصوت" لضمان عمل التنبيهات الصوتية
+          </p>
         </div>
       </div>
     </div>
