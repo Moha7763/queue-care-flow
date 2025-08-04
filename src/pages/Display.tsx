@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { AlertTriangle } from 'lucide-react';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 type ExamType = 'xray' | 'ultrasound' | 'ct_scan' | 'mri';
 
@@ -33,6 +36,7 @@ interface Ticket {
   status: string;
   postpone_count: number;
   created_at: string;
+  emergency_type?: string;
 }
 
 const Display = () => {
@@ -42,6 +46,7 @@ const Display = () => {
     ct_scan: [],
     mri: []
   });
+  const [emergencyCount, setEmergencyCount] = useState(0);
 
   const loadTickets = async () => {
     try {
@@ -61,11 +66,16 @@ const Display = () => {
           mri: []
         };
 
+        let emergencyTotal = 0;
         data.forEach((ticket: any) => {
           groupedTickets[ticket.exam_type as ExamType].push(ticket);
+          if (ticket.emergency_type) {
+            emergencyTotal++;
+          }
         });
 
         setTickets(groupedTickets);
+        setEmergencyCount(emergencyTotal);
       }
     } catch (error) {
       console.error('Error loading tickets:', error);
@@ -107,11 +117,17 @@ const Display = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4">
-      <div className="max-w-7xl mx-auto space-y-3 sm:space-y-6">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="max-w-7xl mx-auto p-2 sm:p-4 space-y-3 sm:space-y-6">
         <div className="text-center">
           <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-2 sm:mb-4">شاشة عرض المرضى</h1>
-          <p className="text-sm sm:text-xl text-muted-foreground">مركز الحياة للأشعة</p>
+          {emergencyCount > 0 && (
+            <div className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-4 py-2 rounded-lg mb-4">
+              <AlertTriangle className="w-5 h-5" />
+              <span className="font-semibold">يوجد {emergencyCount} حالة طوارئ</span>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
@@ -131,18 +147,33 @@ const Display = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-2 sm:p-4 lg:p-8 space-y-2 sm:space-y-4 lg:space-y-6">
-                  {/* Current Patient */}
-                  <div className="text-center">
-                    <h3 className="text-xs sm:text-sm lg:text-xl font-semibold mb-2 sm:mb-4">المريض الحالي</h3>
-                    {currentPatient ? (
-                      <div className="bg-current/10 border-2 border-current/20 rounded-lg p-2 sm:p-4 lg:p-6">
-                        <div className="text-2xl sm:text-4xl lg:text-6xl font-bold text-current mb-1 sm:mb-2">
-                          {examPrefixes[type as ExamType]}{currentPatient.ticket_number}
-                        </div>
-                        <Badge className="bg-current text-xs sm:text-sm lg:text-lg px-2 sm:px-4 py-1 sm:py-2">
-                          جاري الفحص
-                        </Badge>
-                      </div>
+                   {/* Current Patient */}
+                   <div className="text-center">
+                     <h3 className="text-xs sm:text-sm lg:text-xl font-semibold mb-2 sm:mb-4">المريض الحالي</h3>
+                     {currentPatient ? (
+                       <div className={`border-2 rounded-lg p-2 sm:p-4 lg:p-6 ${
+                         currentPatient.emergency_type 
+                           ? 'bg-red-50 border-red-300' 
+                           : 'bg-current/10 border-current/20'
+                       }`}>
+                         <div className={`text-2xl sm:text-4xl lg:text-6xl font-bold mb-1 sm:mb-2 ${
+                           currentPatient.emergency_type 
+                             ? 'text-red-600' 
+                             : 'text-current'
+                         }`}>
+                           {currentPatient.emergency_type && '🚨 '}
+                           {examPrefixes[type as ExamType]}{currentPatient.ticket_number}
+                         </div>
+                         <div className="space-y-1">
+                           <Badge className={`text-xs sm:text-sm lg:text-lg px-2 sm:px-4 py-1 sm:py-2 ${
+                             currentPatient.emergency_type 
+                               ? 'bg-red-600 text-white' 
+                               : 'bg-current text-white'
+                           }`}>
+                             {currentPatient.emergency_type ? 'طوارئ - جاري الفحص' : 'جاري الفحص'}
+                           </Badge>
+                         </div>
+                       </div>
                     ) : (
                       <div className="bg-muted border-2 border-border rounded-lg p-2 sm:p-4 lg:p-6">
                         <div className="text-xl sm:text-2xl lg:text-4xl font-bold text-muted-foreground mb-1 sm:mb-2">
@@ -214,6 +245,7 @@ const Display = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -76,6 +76,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           date: string
+          emergency_type: string | null
           exam_type: Database["public"]["Enums"]["exam_type"]
           id: string
           postpone_count: number
@@ -88,6 +89,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           date?: string
+          emergency_type?: string | null
           exam_type: Database["public"]["Enums"]["exam_type"]
           id?: string
           postpone_count?: number
@@ -100,6 +102,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           date?: string
+          emergency_type?: string | null
           exam_type?: Database["public"]["Enums"]["exam_type"]
           id?: string
           postpone_count?: number

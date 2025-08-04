@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Printer } from 'lucide-react';
+import { Printer, AlertTriangle } from 'lucide-react';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 type ExamType = 'xray' | 'ultrasound' | 'ct_scan' | 'mri';
 
@@ -27,6 +29,7 @@ const PatientQueue = () => {
     ct_scan: [],
     mri: []
   });
+  const [emergencyCount, setEmergencyCount] = useState(0);
   const { toast } = useToast();
 
   const login = async (e: React.FormEvent) => {
@@ -237,11 +240,16 @@ const PatientQueue = () => {
           mri: []
         };
 
+        let emergencyTotal = 0;
         data.forEach((ticket: any) => {
           groupedTickets[ticket.exam_type as ExamType].push(ticket);
+          if (ticket.emergency_type) {
+            emergencyTotal++;
+          }
         });
 
         setCurrentTickets(groupedTickets);
+        setEmergencyCount(emergencyTotal);
       }
     } catch (error) {
       console.error('Error loading tickets:', error);
@@ -317,12 +325,19 @@ const PatientQueue = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="max-w-7xl mx-auto p-2 sm:p-4 space-y-4 sm:space-y-8">
         <div className="flex justify-between items-center">
           <div className="text-center flex-1">
             <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">إنشاء تذكرة جديدة</h1>
             <p className="text-muted-foreground text-sm sm:text-base">اختر نوع الفحص لإنشاء تذكرة</p>
+            {emergencyCount > 0 && (
+              <div className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-4 py-2 rounded-lg mt-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="text-sm font-semibold">تنبيه: يوجد {emergencyCount} حالة طوارئ</span>
+              </div>
+            )}
           </div>
           <Button onClick={() => setIsAuthenticated(false)} variant="destructive">
             تسجيل خروج
@@ -385,6 +400,7 @@ const PatientQueue = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

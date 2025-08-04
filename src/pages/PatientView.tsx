@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Clock, Users, Activity } from 'lucide-react';
+import { Loader2, Clock, Users, Activity, AlertTriangle } from 'lucide-react';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 type ExamType = 'xray' | 'ultrasound' | 'ct_scan' | 'mri';
 
@@ -38,6 +40,7 @@ interface PatientData {
   totalWaiting: number;
   currentPatient: number | null;
   isCurrentPatient: boolean;
+  emergencyType?: string;
 }
 
 const PatientView = () => {
@@ -49,6 +52,7 @@ const PatientView = () => {
   const [newCaseCount, setNewCaseCount] = useState<number>(0);
   const [userInteracted, setUserInteracted] = useState(false);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [emergencyCount, setEmergencyCount] = useState(0);
   const { toast } = useToast();
 
   // Initialize audio context after user interaction
@@ -216,6 +220,10 @@ const PatientView = () => {
         return;
       }
 
+      // Count emergency tickets
+      const emergencyTotal = tickets.filter(t => t.emergency_type).length;
+      setEmergencyCount(emergencyTotal);
+
       // Count new cases since last check
       const currentNewCaseCount = tickets.filter(t => t.status === 'waiting').length;
       if (newCaseCount > 0 && currentNewCaseCount > newCaseCount) {
@@ -248,7 +256,8 @@ const PatientView = () => {
         position: isCurrentPatient ? 0 : ourPosition,
         totalWaiting: waitingTickets.length,
         currentPatient: currentPatientNumber,
-        isCurrentPatient
+        isCurrentPatient,
+        emergencyType: ourTicket.emergency_type
       };
 
       // Check if it's our turn (status changed to current)
@@ -314,35 +323,43 @@ const PatientView = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p className="text-lg">جاري تحميل بيانات المريض...</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center p-4 min-h-[60vh]">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+              <p className="text-lg">جاري تحميل بيانات المريض...</p>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold mb-2">خطأ</h2>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <div className="space-y-2">
-              <Button onClick={() => window.location.reload()}>
-                إعادة المحاولة
-              </Button>
-              <Button onClick={testVibrationAndSound} variant="outline" className="w-full">
-                اختبار الاهتزاز والصوت
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center p-4 min-h-[60vh]">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center">
+              <div className="text-red-500 text-6xl mb-4">⚠️</div>
+              <h2 className="text-xl font-bold mb-2">خطأ</h2>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <div className="space-y-2">
+                <Button onClick={() => window.location.reload()}>
+                  إعادة المحاولة
+                </Button>
+                <Button onClick={testVibrationAndSound} variant="outline" className="w-full">
+                  اختبار الاهتزاز والصوت
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -354,13 +371,22 @@ const PatientView = () => {
   const examColor = examColors[patientData.examType];
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold mb-2">مركز الحياة للأشعة</h1>
-          <p className="text-muted-foreground">متابعة دور المريض</p>
-        </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="max-w-2xl mx-auto p-4 space-y-6">
+        {/* Emergency Alert */}
+        {emergencyCount > 0 && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-red-800">
+                <AlertTriangle className="w-5 h-5" />
+                <span className="font-semibold">
+                  تنبيه: يوجد {emergencyCount} حالة طوارئ قد تؤثر على أوقات الانتظار
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Patient Ticket Info */}
         <Card>
@@ -373,9 +399,18 @@ const PatientView = () => {
             <div className="text-center space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground mb-2">رقم التذكرة</p>
-                <div className="text-4xl font-bold text-primary">
+                <div className={`text-4xl font-bold ${
+                  patientData.emergencyType ? 'text-red-600' : 'text-primary'
+                }`}>
+                  {patientData.emergencyType && '🚨 '}
                   {prefix}{patientData.ticketNumber}
+                  {patientData.emergencyType && ' 🚨'}
                 </div>
+                {patientData.emergencyType && (
+                  <Badge className="bg-red-600 text-white text-sm px-3 py-1 mt-2">
+                    حالة طوارئ - أولوية عاجلة
+                  </Badge>
+                )}
               </div>
               
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
@@ -410,67 +445,56 @@ const PatientView = () => {
         </Card>
 
         {/* Queue Status */}
-        {!patientData.isCurrentPatient && (
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center space-y-4">
-                <Users className="w-8 h-8 mx-auto text-waiting" />
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">موقعك في الطابور</p>
-                  <div className="text-3xl font-bold text-waiting">
-                    {patientData.position > 0 ? patientData.position : 'غير محدد'}
-                  </div>
-                </div>
-                
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    إجمالي المرضى في الانتظار: <span className="font-semibold">{patientData.totalWaiting}</span>
-                  </p>
-                  {patientData.position > 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      باقي {patientData.position} مريض قبل دورك
-                    </p>
-                  )}
-                </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <Users className="w-8 h-8 mx-auto mb-2 text-waiting" />
+                <p className="text-sm text-muted-foreground mb-1">موقعك في الطابور</p>
+                <p className="text-2xl font-bold text-waiting">
+                  {patientData.isCurrentPatient ? '🎯' : patientData.position || '--'}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div>
+                <Clock className="w-8 h-8 mx-auto mb-2 text-postponed" />
+                <p className="text-sm text-muted-foreground mb-1">إجمالي المنتظرين</p>
+                <p className="text-2xl font-bold text-postponed">
+                  {patientData.totalWaiting}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Current Turn Alert */}
-        {patientData.isCurrentPatient && (
-          <Card className="border-current border-2 bg-current/10">
-            <CardContent className="p-8 text-center">
-              <div className="text-6xl mb-4">🔔</div>
-              <h2 className="text-2xl font-bold text-current mb-2">
-                دورك الآن!
-              </h2>
-              <p className="text-muted-foreground">
-                يرجى التوجه إلى غرفة الفحص
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Controls */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <Button 
+                onClick={testVibrationAndSound}
+                className="w-full"
+                variant="outline"
+              >
+                🔔 اختبار الاهتزاز والصوت
+              </Button>
+              
+              <div className="text-center text-sm text-muted-foreground">
+                <p>💡 احتفظ بالصفحة مفتوحة لتلقي التنبيهات</p>
+                <p>🔊 الصوت والاهتزاز سيعملان عند دورك</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Live indicator and controls */}
-        <div className="text-center space-y-4">
+        {/* Live Status */}
+        <div className="text-center">
           <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            تحديث مباشر - الصفحة محمية من الإغلاق
+            تحديث مباشر - آخر تحديث: {new Date().toLocaleTimeString('ar-EG')}
           </div>
-          <div className="flex gap-2 justify-center">
-            <Button onClick={testVibrationAndSound} variant="outline" size="sm">
-              اختبار الاهتزاز والصوت
-            </Button>
-            <Button onClick={initAudioContext} variant="outline" size="sm">
-              تفعيل الصوت
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            اضغط "تفعيل الصوت" لضمان عمل التنبيهات الصوتية
-          </p>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
