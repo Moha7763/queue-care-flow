@@ -41,6 +41,7 @@ interface Ticket {
   status: string;
   postpone_count: number;
   created_at: string;
+  emergency_type?: string;
 }
 
 const Doctor = () => {
@@ -140,7 +141,16 @@ const Doctor = () => {
     try {
       const currentTickets = tickets[examType];
       const currentPatient = currentTickets.find(t => t.status === 'current');
-      const waitingPatients = currentTickets.filter(t => t.status === 'waiting').sort((a, b) => a.ticket_number - b.ticket_number);
+      // Sort waiting patients with emergency priority: after 2 regular patients
+      const allWaiting = currentTickets.filter(t => t.status === 'waiting');
+      const emergencyWaiting = allWaiting.filter(t => t.emergency_type);
+      const regularWaiting = allWaiting.filter(t => !t.emergency_type);
+      
+      const waitingPatients = [
+        ...regularWaiting.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number),
+        ...emergencyWaiting.sort((a, b) => a.ticket_number - b.ticket_number),
+        ...regularWaiting.slice(2).sort((a, b) => a.ticket_number - b.ticket_number)
+      ];
 
       // Complete current patient if exists
       if (currentPatient) {
@@ -394,7 +404,16 @@ const Doctor = () => {
           {Object.entries(examTypes).map(([type, name]) => {
             const examTickets = tickets[type as ExamType];
             const currentPatient = examTickets.find(t => t.status === 'current');
-            const waitingPatients = examTickets.filter(t => t.status === 'waiting').sort((a, b) => a.ticket_number - b.ticket_number);
+            // Sort waiting patients with emergency priority
+            const allWaiting = examTickets.filter(t => t.status === 'waiting');
+            const emergencyWaiting = allWaiting.filter(t => t.emergency_type);
+            const regularWaiting = allWaiting.filter(t => !t.emergency_type);
+            
+            const waitingPatients = [
+              ...regularWaiting.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number),
+              ...emergencyWaiting.sort((a, b) => a.ticket_number - b.ticket_number),
+              ...regularWaiting.slice(2).sort((a, b) => a.ticket_number - b.ticket_number)
+            ];
             const postponedPatients = examTickets.filter(t => t.status === 'postponed');
             const cancelledPatients = examTickets.filter(t => t.status === 'cancelled');
 
@@ -463,12 +482,18 @@ const Doctor = () => {
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">في الانتظار ({waitingPatients.length})</h4>
                     <div className="max-h-32 overflow-y-auto space-y-1">
-                      {waitingPatients.slice(0, 5).map((ticket) => (
-                        <div key={ticket.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <span className="font-medium">{ticket.ticket_number}</span>
-                          <Badge variant="outline">انتظار</Badge>
-                        </div>
-                      ))}
+                       {waitingPatients.slice(0, 5).map((ticket) => (
+                         <div key={ticket.id} className={`flex items-center justify-between p-2 rounded ${
+                           ticket.emergency_type ? 'bg-red-50 border border-red-200' : 'bg-gray-50'
+                         }`}>
+                           <span className={`font-medium ${ticket.emergency_type ? 'text-red-600' : ''}`}>
+                             {ticket.emergency_type && '🚨 '}{ticket.ticket_number}
+                           </span>
+                           <Badge variant="outline" className={ticket.emergency_type ? 'text-red-600' : ''}>
+                             {ticket.emergency_type ? 'طوارئ' : 'انتظار'}
+                           </Badge>
+                         </div>
+                       ))}
                       {waitingPatients.length > 5 && (
                         <div className="text-center text-sm text-muted-foreground">
                           +{waitingPatients.length - 5} آخرين

@@ -134,10 +134,18 @@ const Display = () => {
           {Object.entries(examTypes).map(([type, name]) => {
             const examTickets = tickets[type as ExamType];
             const currentPatient = examTickets.find(t => t.status === 'current');
-            const waitingPatients = examTickets
-              .filter(t => t.status === 'waiting')
-              .sort((a, b) => a.ticket_number - b.ticket_number);
-            const nextPatients = waitingPatients.slice(0, 5);
+            // Sort waiting patients by priority: emergency cases after 2 patients
+            const waitingPatients = examTickets.filter(t => t.status === 'waiting');
+            const emergencyPatients = waitingPatients.filter(t => t.emergency_type);
+            const regularPatients = waitingPatients.filter(t => !t.emergency_type);
+            
+            // Regular patients first 2, then emergency, then rest
+            const sortedWaiting = [
+              ...regularPatients.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number),
+              ...emergencyPatients.sort((a, b) => a.ticket_number - b.ticket_number),
+              ...regularPatients.slice(2).sort((a, b) => a.ticket_number - b.ticket_number)
+            ];
+            const nextPatients = sortedWaiting.slice(0, 5);
 
             return (
               <Card key={type} className="min-h-[200px] sm:min-h-[300px] lg:min-h-[400px]">
@@ -193,27 +201,34 @@ const Display = () => {
                     </h3>
                     {nextPatients.length > 0 ? (
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2">
-                        {nextPatients.slice(0, window.innerWidth < 640 ? 3 : 5).map((ticket, index) => (
-                          <div 
-                            key={ticket.id} 
-                            className={`text-center p-1 sm:p-2 lg:p-3 rounded-lg border-2 ${
-                              index === 0 
-                                ? 'bg-waiting/10 border-waiting/20' 
-                                : 'bg-muted border-border'
-                            }`}
-                          >
-                            <div className={`text-sm sm:text-lg lg:text-2xl font-bold ${
-                              index === 0 ? 'text-waiting' : 'text-muted-foreground'
-                            }`}>
-                              {examPrefixes[type as ExamType]}{ticket.ticket_number}
-                            </div>
-                            {index === 0 && (
-                              <Badge variant="outline" className="text-xs mt-1 hidden sm:inline-flex">
-                                التالي
-                              </Badge>
-                            )}
-                          </div>
-                        ))}
+                         {nextPatients.slice(0, window.innerWidth < 640 ? 3 : 5).map((ticket, index) => (
+                           <div 
+                             key={ticket.id} 
+                             className={`text-center p-1 sm:p-2 lg:p-3 rounded-lg border-2 ${
+                               index === 0 
+                                 ? 'bg-waiting/10 border-waiting/20' 
+                                 : ticket.emergency_type
+                                 ? 'bg-red-50 border-red-300'
+                                 : 'bg-muted border-border'
+                             }`}
+                           >
+                             <div className={`text-sm sm:text-lg lg:text-2xl font-bold ${
+                               index === 0 
+                                 ? 'text-waiting' 
+                                 : ticket.emergency_type
+                                 ? 'text-red-600'
+                                 : 'text-muted-foreground'
+                             }`}>
+                               {ticket.emergency_type && '🚨 '}
+                               {examPrefixes[type as ExamType]}{ticket.ticket_number}
+                             </div>
+                             {index === 0 && (
+                               <Badge variant="outline" className="text-xs mt-1 hidden sm:inline-flex">
+                                 {ticket.emergency_type ? 'طوارئ التالي' : 'التالي'}
+                               </Badge>
+                             )}
+                           </div>
+                         ))}
                       </div>
                     ) : (
                       <div className="text-center text-muted-foreground text-xs sm:text-sm">
@@ -227,9 +242,9 @@ const Display = () => {
                     <div className="text-xs sm:text-sm text-muted-foreground">
                       إجمالي المنتظرين
                     </div>
-                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-postponed">
-                      {waitingPatients.length}
-                    </div>
+                     <div className="text-lg sm:text-xl lg:text-2xl font-bold text-postponed">
+                       {sortedWaiting.length}
+                     </div>
                   </div>
                 </CardContent>
               </Card>

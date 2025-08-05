@@ -21,9 +21,15 @@ const Footer = () => {
             <p className="text-muted-foreground mb-3">
               أمام مضيفة الست زكية
             </p>
-            <div className="flex items-center justify-center md:justify-start gap-2">
-              <Phone className="w-4 h-4 text-primary" />
-              <span className="text-muted-foreground">للاستفسار: 01234567890</span>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-center md:justify-start gap-2">
+                <Phone className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">01503988008</span>
+              </div>
+              <div className="flex items-center justify-center md:justify-start gap-2">
+                <Phone className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">0402539399</span>
+              </div>
             </div>
           </div>
 
@@ -41,7 +47,7 @@ const Footer = () => {
             </p>
             <div className="flex items-center justify-center md:justify-start gap-2">
               <Phone className="w-4 h-4 text-primary" />
-              <span className="text-muted-foreground">للاستفسار: 01234567890</span>
+              <span className="text-muted-foreground">0402543503</span>
             </div>
           </div>
         </div>
