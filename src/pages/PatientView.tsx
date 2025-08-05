@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -485,6 +485,23 @@ const PatientView = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Feedback Link - Show only if patient completed */}
+        {patientData.status === 'completed' && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="p-6 text-center">
+              <h3 className="text-lg font-semibold text-orange-800 mb-2">شكراً لزيارتكم</h3>
+              <p className="text-orange-700 text-sm mb-4">
+                نرجو تقييم تجربتكم معنا
+              </p>
+              <Link to="/feedback">
+                <Button variant="outline" className="border-orange-400 text-orange-800 hover:bg-orange-100">
+                  تقديم شكوى أو اقتراح
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Live Status */}
         <div className="text-center">

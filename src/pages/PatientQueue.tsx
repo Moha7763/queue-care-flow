@@ -30,6 +30,12 @@ const PatientQueue = () => {
     mri: []
   });
   const [emergencyCount, setEmergencyCount] = useState(0);
+  const [emergencySelections, setEmergencySelections] = useState<Record<ExamType, boolean>>({
+    xray: false,
+    ultrasound: false,
+    ct_scan: false,
+    mri: false
+  });
   const { toast } = useToast();
 
   const login = async (e: React.FormEvent) => {
@@ -77,6 +83,8 @@ const PatientQueue = () => {
   };
 
   const createTicket = async (examType: ExamType) => {
+    const isEmergency = emergencySelections[examType];
+    
     try {
       const today = new Date().toISOString().split('T')[0];
       
@@ -127,7 +135,8 @@ const PatientQueue = () => {
         .insert({
           ticket_number: nextNumber,
           exam_type: examType,
-          date: today
+          date: today,
+          emergency_type: isEmergency ? 'urgent' : null
         })
         .select()
         .single();
@@ -136,12 +145,15 @@ const PatientQueue = () => {
 
       if (data) {
         // Print the ticket with secure token
-        printTicket(data.ticket_number, examType, data.secure_token);
+        printTicket(data.ticket_number, examType, data.secure_token, isEmergency);
         
         toast({
-          title: "تم إنشاء التذكرة بنجاح",
-          description: `رقم التذكرة: ${data.ticket_number} - ${examTypes[examType]}`
+          title: isEmergency ? "تم إنشاء تذكرة طوارئ بنجاح" : "تم إنشاء التذكرة بنجاح",
+          description: `رقم التذكرة: ${data.ticket_number} - ${examTypes[examType]}${isEmergency ? ' (طوارئ)' : ''}`
         });
+        
+        // Reset emergency selection
+        setEmergencySelections(prev => ({ ...prev, [examType]: false }));
         loadCurrentTickets();
       }
     } catch (error) {
@@ -168,20 +180,22 @@ const PatientQueue = () => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&format=png&data=${encodeURIComponent(patientUrl)}`;
   };
 
-  const printTicket = (ticketNumber: number, examType: ExamType, secureToken: string) => {
+  const printTicket = (ticketNumber: number, examType: ExamType, secureToken: string, isEmergency = false) => {
     const prefix = getExamPrefix(examType);
     const qrCodeUrl = generateQRCode(ticketNumber, examType, secureToken);
     
     const printContent = `
       <div class="print-ticket">
-        <h2 style="margin: 10px 0; font-size: 18px; font-weight: bold;">مركز الحياة للأشعة</h2>
+        <h2 style="margin: 10px 0; font-size: 18px; font-weight: bold;">مركز الحياة للأشعة والتحاليل</h2>
         <div style="margin: 15px 0;">
           <div style="font-size: 16px; margin: 5px 0;">${examTypes[examType]}</div>
-          <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">${prefix}${ticketNumber}</div>
+          ${isEmergency ? '<div style="font-size: 16px; margin: 5px 0; color: red; font-weight: bold;">🚨 حالة طوارئ 🚨</div>' : ''}
+          <div style="font-size: 24px; font-weight: bold; margin: 10px 0; ${isEmergency ? 'color: red;' : ''}">${prefix}${ticketNumber}</div>
           <div style="margin: 15px 0;">
             <img src="${qrCodeUrl}" alt="QR Code" style="width: 150px; height: 150px; display: block; margin: 0 auto;" crossOrigin="anonymous" />
           </div>
           <div style="font-size: 10px; margin: 3px 0; color: #666;">امسح الكود لمتابعة دورك</div>
+          ${isEmergency ? '<div style="font-size: 10px; margin: 3px 0; color: red;">سيتم استدعاؤك بأولوية عاجلة</div>' : ''}
           <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleDateString('ar-EG')}</div>
           <div style="font-size: 12px; margin: 5px 0;">${new Date().toLocaleTimeString('ar-EG')}</div>
         </div>
@@ -351,13 +365,32 @@ const PatientQueue = () => {
               <Card key={type} className="medical-card">
                 <CardContent className="p-4 sm:p-6 text-center">
                   <h3 className="text-sm sm:text-lg font-medium mb-3 sm:mb-4 text-foreground">{name}</h3>
+                  
+                  {/* Emergency Checkbox */}
+                  <div className="mb-3 sm:mb-4">
+                    <label className="flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={emergencySelections[type as ExamType]}
+                        onChange={(e) => setEmergencySelections(prev => ({ 
+                          ...prev, 
+                          [type]: e.target.checked 
+                        }))}
+                        className="w-4 h-4 text-red-600 border-2 border-red-300 rounded focus:ring-red-500"
+                      />
+                      <span className={`font-medium ${emergencySelections[type as ExamType] ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        🚨 طوارئ
+                      </span>
+                    </label>
+                  </div>
+                  
                   <Button 
                     onClick={() => createTicket(type as ExamType)}
-                    className="w-full text-xs sm:text-sm"
+                    className={`w-full text-xs sm:text-sm ${emergencySelections[type as ExamType] ? 'bg-red-600 hover:bg-red-700' : ''}`}
                     size="default"
                   >
                     <Printer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                    إنشاء تذكرة
+                    {emergencySelections[type as ExamType] ? 'إنشاء تذكرة طوارئ' : 'إنشاء تذكرة'}
                   </Button>
                 </CardContent>
               </Card>

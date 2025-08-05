@@ -12,7 +12,7 @@ const Index = () => {
           <p className="text-xl text-muted-foreground mb-8">مركز الأشعة</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -84,6 +84,25 @@ const Index = () => {
               <Link to="/admin">
                 <Button variant="destructive" className="w-full">
                   دخول لوحة التحكم
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="border-orange-200 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-800">
+                <Users className="w-6 h-6" />
+                الشكاوى والمقترحات
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-orange-700 mb-4 text-sm">
+                تقديم شكوى أو اقتراح لتحسين الخدمة
+              </p>
+              <Link to="/feedback">
+                <Button variant="outline" className="w-full border-orange-400 text-orange-800 hover:bg-orange-100">
+                  تقديم شكوى أو اقتراح
                 </Button>
               </Link>
             </CardContent>
