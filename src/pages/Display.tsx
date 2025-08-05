@@ -139,12 +139,20 @@ const Display = () => {
             const emergencyPatients = waitingPatients.filter(t => t.emergency_type);
             const regularPatients = waitingPatients.filter(t => !t.emergency_type);
             
-            // Regular patients first 2, then emergency, then rest
-            const sortedWaiting = [
-              ...regularPatients.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number),
-              ...emergencyPatients.sort((a, b) => a.ticket_number - b.ticket_number),
-              ...regularPatients.slice(2).sort((a, b) => a.ticket_number - b.ticket_number)
-            ];
+            // Emergency cases after 2 regular patients, then rest
+            const sortedWaiting = [];
+            
+            // Add first 2 regular patients
+            const firstTwoRegular = regularPatients.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number);
+            sortedWaiting.push(...firstTwoRegular);
+            
+            // Add all emergency patients next
+            const sortedEmergency = emergencyPatients.sort((a, b) => a.ticket_number - b.ticket_number);
+            sortedWaiting.push(...sortedEmergency);
+            
+            // Add remaining regular patients
+            const remainingRegular = regularPatients.slice(2).sort((a, b) => a.ticket_number - b.ticket_number);
+            sortedWaiting.push(...remainingRegular);
             const nextPatients = sortedWaiting.slice(0, 5);
 
             return (
@@ -199,37 +207,42 @@ const Display = () => {
                     <h3 className="text-xs sm:text-sm lg:text-lg font-semibold mb-2 sm:mb-4 text-center">
                       المرضى القادمون
                     </h3>
-                    {nextPatients.length > 0 ? (
-                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2">
-                         {nextPatients.slice(0, window.innerWidth < 640 ? 3 : 5).map((ticket, index) => (
-                           <div 
-                             key={ticket.id} 
-                             className={`text-center p-1 sm:p-2 lg:p-3 rounded-lg border-2 ${
-                               index === 0 
-                                 ? 'bg-waiting/10 border-waiting/20' 
-                                 : ticket.emergency_type
-                                 ? 'bg-red-50 border-red-300'
-                                 : 'bg-muted border-border'
-                             }`}
-                           >
-                             <div className={`text-sm sm:text-lg lg:text-2xl font-bold ${
-                               index === 0 
-                                 ? 'text-waiting' 
-                                 : ticket.emergency_type
-                                 ? 'text-red-600'
-                                 : 'text-muted-foreground'
-                             }`}>
-                               {ticket.emergency_type && '🚨 '}
-                               {examPrefixes[type as ExamType]}{ticket.ticket_number}
-                             </div>
-                             {index === 0 && (
-                               <Badge variant="outline" className="text-xs mt-1 hidden sm:inline-flex">
-                                 {ticket.emergency_type ? 'طوارئ التالي' : 'التالي'}
-                               </Badge>
-                             )}
-                           </div>
-                         ))}
-                      </div>
+                     {nextPatients.length > 0 ? (
+                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2">
+                          {nextPatients.slice(0, window.innerWidth < 640 ? 3 : 5).map((ticket, index) => (
+                            <div 
+                              key={ticket.id} 
+                              className={`text-center p-2 sm:p-3 lg:p-4 rounded-xl border-2 shadow-sm hover:shadow-md transition-all ${
+                                index === 0 
+                                  ? 'bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30 shadow-primary/10' 
+                                  : ticket.emergency_type
+                                  ? 'bg-gradient-to-br from-red-50 to-red-25 border-red-300 shadow-red-100'
+                                  : 'bg-gradient-to-br from-muted/50 to-muted/30 border-border hover:border-primary/30'
+                              }`}
+                            >
+                              <div className={`text-lg sm:text-xl lg:text-3xl font-bold mb-1 ${
+                                index === 0 
+                                  ? 'text-primary' 
+                                  : ticket.emergency_type
+                                  ? 'text-red-600'
+                                  : 'text-muted-foreground'
+                              }`}>
+                                {ticket.emergency_type && '🚨 '}
+                                {examPrefixes[type as ExamType]}{ticket.ticket_number}
+                              </div>
+                              {index === 0 && (
+                                <Badge className="text-xs mt-1 hidden sm:inline-flex bg-primary text-primary-foreground">
+                                  {ticket.emergency_type ? 'طوارئ التالي' : 'التالي'}
+                                </Badge>
+                              )}
+                              {ticket.emergency_type && index > 0 && (
+                                <Badge variant="destructive" className="text-xs mt-1 hidden sm:inline-flex">
+                                  طوارئ
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                       </div>
                     ) : (
                       <div className="text-center text-muted-foreground text-xs sm:text-sm">
                         لا يوجد مرضى في الانتظار

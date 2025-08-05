@@ -8,62 +8,62 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 210 15% 98%;
-    --foreground: 210 10% 25%;
+    --background: 355 25% 97%;
+    --foreground: 355 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 10% 25%;
+    --card-foreground: 355 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 25%;
+    --popover-foreground: 355 15% 15%;
 
-    --primary: 210 40% 50%;
+    --primary: 355 70% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 90%;
-    --secondary-foreground: 210 10% 30%;
+    --secondary: 355 20% 92%;
+    --secondary-foreground: 355 15% 25%;
 
-    --muted: 210 15% 95%;
-    --muted-foreground: 210 10% 55%;
+    --muted: 355 15% 95%;
+    --muted-foreground: 355 10% 45%;
 
-    --accent: 210 20% 90%;
-    --accent-foreground: 210 10% 30%;
+    --accent: 355 25% 90%;
+    --accent-foreground: 355 15% 25%;
 
-    --destructive: 0 60% 55%;
+    --destructive: 0 70% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Soft medical colors */
-    --xray: 210 40% 60%;
-    --ultrasound: 160 30% 50%;
-    --ct: 25 40% 55%;
-    --mri: 280 30% 55%;
-    --waiting: 45 40% 60%;
-    --current: 120 30% 50%;
-    --postponed: 15 40% 60%;
+    /* Medical device colors - warm red theme */
+    --xray: 355 60% 65%;
+    --ultrasound: 340 50% 60%;
+    --ct: 10 60% 65%;
+    --mri: 320 50% 60%;
+    --waiting: 45 70% 70%;
+    --current: 140 50% 55%;
+    --postponed: 25 65% 65%;
 
-    --border: 210 20% 85%;
-    --input: 210 20% 90%;
-    --ring: 210 40% 50%;
+    --border: 355 25% 85%;
+    --input: 355 20% 92%;
+    --ring: 355 70% 55%;
 
     --radius: 0.5rem;
 
-    /* Medical device type colors - softer */
-    --xray-color: 210 40% 60%;
-    --ultrasound-color: 160 30% 50%;
-    --ct-color: 25 40% 55%;
-    --mri-color: 280 30% 55%;
+    /* Medical device type colors - warm red theme */
+    --xray-color: 355 60% 65%;
+    --ultrasound-color: 340 50% 60%;
+    --ct-color: 10 60% 65%;
+    --mri-color: 320 50% 60%;
 
-    /* Status colors - softer */
-    --waiting-color: 45 40% 60%;
-    --current-color: 120 30% 50%;
-    --postponed-color: 15 40% 60%;
-    --completed-color: 120 30% 50%;
-    --cancelled-color: 0 60% 55%;
+    /* Status colors - warm red theme */
+    --waiting-color: 45 70% 70%;
+    --current-color: 140 50% 55%;
+    --postponed-color: 25 65% 65%;
+    --completed-color: 140 50% 55%;
+    --cancelled-color: 0 70% 60%;
 
-    /* Subtle gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 40% 50%), hsl(210 35% 45%));
-    --gradient-secondary: linear-gradient(135deg, hsl(210 20% 90%), hsl(210 15% 88%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 15% 98%));
+    /* Elegant gradients - red theme */
+    --gradient-primary: linear-gradient(135deg, hsl(355 70% 55%), hsl(355 65% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(355 20% 92%), hsl(355 15% 90%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(355 25% 97%));
 
     --sidebar-background: 210 20% 95%;
     --sidebar-foreground: 210 10% 30%;
@@ -76,42 +76,42 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 210 15% 12%;
-    --foreground: 210 15% 85%;
+    --background: 355 20% 10%;
+    --foreground: 355 15% 85%;
 
-    --card: 210 15% 15%;
-    --card-foreground: 210 15% 85%;
+    --card: 355 20% 12%;
+    --card-foreground: 355 15% 85%;
 
-    --popover: 210 15% 15%;
-    --popover-foreground: 210 15% 85%;
+    --popover: 355 20% 12%;
+    --popover-foreground: 355 15% 85%;
 
-    --primary: 210 40% 60%;
-    --primary-foreground: 210 15% 12%;
+    --primary: 355 65% 65%;
+    --primary-foreground: 355 20% 10%;
 
-    --secondary: 210 15% 20%;
-    --secondary-foreground: 210 15% 85%;
+    --secondary: 355 15% 18%;
+    --secondary-foreground: 355 15% 85%;
 
-    --muted: 210 15% 20%;
-    --muted-foreground: 210 15% 65%;
+    --muted: 355 15% 18%;
+    --muted-foreground: 355 15% 65%;
 
-    --accent: 210 15% 20%;
-    --accent-foreground: 210 15% 85%;
+    --accent: 355 15% 18%;
+    --accent-foreground: 355 15% 85%;
 
-    --destructive: 0 60% 60%;
-    --destructive-foreground: 210 15% 85%;
+    --destructive: 0 65% 65%;
+    --destructive-foreground: 355 15% 85%;
 
-    /* Soft medical colors for dark mode */
-    --xray: 210 40% 65%;
-    --ultrasound: 160 30% 55%;
-    --ct: 25 40% 60%;
-    --mri: 280 30% 60%;
-    --waiting: 45 40% 65%;
-    --current: 120 30% 55%;
-    --postponed: 15 40% 65%;
+    /* Medical colors for dark mode - warm red theme */
+    --xray: 355 55% 70%;
+    --ultrasound: 340 45% 65%;
+    --ct: 10 55% 70%;
+    --mri: 320 45% 65%;
+    --waiting: 45 65% 75%;
+    --current: 140 45% 60%;
+    --postponed: 25 60% 70%;
 
-    --border: 210 15% 25%;
-    --input: 210 15% 25%;
-    --ring: 210 40% 60%;
+    --border: 355 15% 22%;
+    --input: 355 15% 22%;
+    --ring: 355 65% 65%;
 
     /* Subtle gradients for dark mode */
     --gradient-primary: linear-gradient(135deg, hsl(210 40% 60%), hsl(210 35% 55%));

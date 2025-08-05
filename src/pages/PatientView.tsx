@@ -283,6 +283,15 @@ const PatientView = () => {
       setPatientData(newPatientData);
       setLastStatus(newPatientData.status);
       setError(null);
+
+      // Auto redirect to feedback when completed
+      if (newPatientData.status === 'completed' && lastStatus !== 'completed') {
+        setTimeout(() => {
+          const currentUrl = new URL(window.location.href);
+          const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+          window.location.href = `${baseUrl}/feedback`;
+        }, 3000);
+      }
     } catch (error) {
       console.error('Error loading patient status:', error);
       setError('خطأ في تحميل البيانات');
@@ -488,15 +497,19 @@ const PatientView = () => {
 
         {/* Feedback Link - Show only if patient completed */}
         {patientData.status === 'completed' && (
-          <Card className="border-orange-200 bg-orange-50">
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
             <CardContent className="p-6 text-center">
-              <h3 className="text-lg font-semibold text-orange-800 mb-2">شكراً لزيارتكم</h3>
-              <p className="text-orange-700 text-sm mb-4">
-                نرجو تقييم تجربتكم معنا
+              <h3 className="text-xl font-bold text-primary mb-3">🎉 تم إكمال الفحص بنجاح</h3>
+              <p className="text-primary/80 text-sm mb-4">
+                شكراً لزيارتكم - سيتم توجيهكم لصفحة التقييم خلال ثوان
               </p>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                <span className="text-sm text-primary/70">جاري التحويل التلقائي...</span>
+              </div>
               <Link to="/feedback">
-                <Button variant="outline" className="border-orange-400 text-orange-800 hover:bg-orange-100">
-                  تقديم شكوى أو اقتراح
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  الانتقال الآن لصفحة التقييم
                 </Button>
               </Link>
             </CardContent>

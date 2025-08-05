@@ -141,16 +141,21 @@ const Doctor = () => {
     try {
       const currentTickets = tickets[examType];
       const currentPatient = currentTickets.find(t => t.status === 'current');
-      // Sort waiting patients with emergency priority: after 2 regular patients
+      // Sort waiting patients with emergency priority: emergency cases after 2 regular patients
       const allWaiting = currentTickets.filter(t => t.status === 'waiting');
       const emergencyWaiting = allWaiting.filter(t => t.emergency_type);
       const regularWaiting = allWaiting.filter(t => !t.emergency_type);
       
-      const waitingPatients = [
-        ...regularWaiting.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number),
-        ...emergencyWaiting.sort((a, b) => a.ticket_number - b.ticket_number),
-        ...regularWaiting.slice(2).sort((a, b) => a.ticket_number - b.ticket_number)
-      ];
+      // Build queue: first 2 regular, then all emergency, then remaining regular
+      const waitingPatients = [];
+      const firstTwoRegular = regularWaiting.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number);
+      waitingPatients.push(...firstTwoRegular);
+      
+      const sortedEmergency = emergencyWaiting.sort((a, b) => a.ticket_number - b.ticket_number);
+      waitingPatients.push(...sortedEmergency);
+      
+      const remainingRegular = regularWaiting.slice(2).sort((a, b) => a.ticket_number - b.ticket_number);
+      waitingPatients.push(...remainingRegular);
 
       // Complete current patient if exists
       if (currentPatient) {
@@ -404,16 +409,21 @@ const Doctor = () => {
           {Object.entries(examTypes).map(([type, name]) => {
             const examTickets = tickets[type as ExamType];
             const currentPatient = examTickets.find(t => t.status === 'current');
-            // Sort waiting patients with emergency priority
+            // Sort waiting patients with emergency priority: emergency after 2 regular
             const allWaiting = examTickets.filter(t => t.status === 'waiting');
             const emergencyWaiting = allWaiting.filter(t => t.emergency_type);
             const regularWaiting = allWaiting.filter(t => !t.emergency_type);
             
-            const waitingPatients = [
-              ...regularWaiting.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number),
-              ...emergencyWaiting.sort((a, b) => a.ticket_number - b.ticket_number),
-              ...regularWaiting.slice(2).sort((a, b) => a.ticket_number - b.ticket_number)
-            ];
+            // Build queue properly: first 2 regular, then emergency, then rest
+            const waitingPatients = [];
+            const firstTwoRegular = regularWaiting.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number);
+            waitingPatients.push(...firstTwoRegular);
+            
+            const sortedEmergency = emergencyWaiting.sort((a, b) => a.ticket_number - b.ticket_number);
+            waitingPatients.push(...sortedEmergency);
+            
+            const remainingRegular = regularWaiting.slice(2).sort((a, b) => a.ticket_number - b.ticket_number);
+            waitingPatients.push(...remainingRegular);
             const postponedPatients = examTickets.filter(t => t.status === 'postponed');
             const cancelledPatients = examTickets.filter(t => t.status === 'cancelled');
 
@@ -478,24 +488,34 @@ const Doctor = () => {
                     {waitingPatients.length > 0 && ` (${waitingPatients[0].ticket_number})`}
                   </Button>
 
-                  {/* Waiting Queue */}
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm">في الانتظار ({waitingPatients.length})</h4>
-                    <div className="max-h-32 overflow-y-auto space-y-1">
-                       {waitingPatients.slice(0, 5).map((ticket) => (
-                         <div key={ticket.id} className={`flex items-center justify-between p-2 rounded ${
-                           ticket.emergency_type ? 'bg-red-50 border border-red-200' : 'bg-gray-50'
-                         }`}>
-                           <span className={`font-medium ${ticket.emergency_type ? 'text-red-600' : ''}`}>
-                             {ticket.emergency_type && '🚨 '}{ticket.ticket_number}
-                           </span>
-                           <Badge variant="outline" className={ticket.emergency_type ? 'text-red-600' : ''}>
-                             {ticket.emergency_type ? 'طوارئ' : 'انتظار'}
-                           </Badge>
-                         </div>
-                       ))}
-                      {waitingPatients.length > 5 && (
-                        <div className="text-center text-sm text-muted-foreground">
+                   {/* Waiting Queue */}
+                   <div className="space-y-2">
+                     <h4 className="font-semibold text-sm text-primary">في الانتظار ({waitingPatients.length})</h4>
+                     <div className="max-h-40 overflow-y-auto space-y-2">
+                        {waitingPatients.slice(0, 8).map((ticket, index) => (
+                          <div key={ticket.id} className={`flex items-center justify-between p-3 rounded-lg shadow-sm transition-all hover:shadow-md ${
+                            ticket.emergency_type 
+                              ? 'bg-gradient-to-r from-red-50 to-red-25 border border-red-200 hover:border-red-300' 
+                              : 'bg-gradient-to-r from-primary/5 to-primary/2 border border-primary/20 hover:border-primary/40'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                index < 2 ? 'bg-primary text-primary-foreground' :
+                                ticket.emergency_type ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {index + 1}
+                              </span>
+                              <span className={`font-bold text-lg ${ticket.emergency_type ? 'text-red-600' : 'text-primary'}`}>
+                                {ticket.emergency_type && '🚨 '}{ticket.ticket_number}
+                              </span>
+                            </div>
+                            <Badge variant={ticket.emergency_type ? "destructive" : "outline"} className="font-medium">
+                              {ticket.emergency_type ? 'طوارئ' : 'انتظار'}
+                            </Badge>
+                          </div>
+                        ))}
+                       {waitingPatients.length > 8 && (
+                         <div className="text-center text-sm text-muted-foreground py-2 border-t border-primary/20">
                           +{waitingPatients.length - 5} آخرين
                         </div>
                       )}
