@@ -133,66 +133,55 @@ const Display = () => {
           {Object.entries(examTypes).map(([type, name]) => {
             const examTickets = tickets[type as ExamType];
             const currentPatient = examTickets.find(t => t.status === 'current');
-            // Sort waiting patients by priority: emergency cases after 2 patients
+            // Fixed sorting: emergency cases after every 2 completed regular cases
             const waitingPatients = examTickets.filter(t => t.status === 'waiting');
-            const emergencyPatients = waitingPatients.filter(t => t.emergency_type);
-            const regularPatients = waitingPatients.filter(t => !t.emergency_type);
+            const emergencyPatients = waitingPatients.filter(t => t.emergency_type).sort((a, b) => a.ticket_number - b.ticket_number);
+            const regularPatients = waitingPatients.filter(t => !t.emergency_type).sort((a, b) => a.ticket_number - b.ticket_number);
             
-            // Emergency cases after 2 regular patients, then alternating
-            const sortedWaiting = [];
-            let regularIndex = 0;
-            let emergencyIndex = 0;
+            let finalSorted = [];
             
-            // Add patients in order: 2 regular, then all emergency, then rest regular
-            while (regularIndex < regularPatients.length || emergencyIndex < emergencyPatients.length) {
-              // Add up to 2 regular patients
-              if (regularIndex < regularPatients.length && sortedWaiting.filter(t => !t.emergency_type).length % 3 < 2) {
-                sortedWaiting.push(regularPatients[regularIndex]);
-                regularIndex++;
+            if (emergencyPatients.length === 0) {
+              finalSorted = regularPatients;
+            } else if (regularPatients.length === 0) {
+              finalSorted = emergencyPatients;
+            } else {
+              let regularIndex = 0;
+              let emergencyIndex = 0;
+              let regularCount = 0;
+              
+              // Count completed regular patients today to determine insertion point
+              const completedRegularToday = examTickets.filter(t => 
+                t.status === 'completed' && !t.emergency_type
+              ).length;
+              
+              // Calculate how many regular patients should go before the next emergency
+              const regularBeforeNext = 2 - (completedRegularToday % 2);
+              
+              // Add regular patients before first emergency
+              for (let i = 0; i < regularBeforeNext && regularIndex < regularPatients.length; i++) {
+                finalSorted.push(regularPatients[regularIndex++]);
+                regularCount++;
               }
-              // Add emergency patients after every 2 regular patients
-              else if (emergencyIndex < emergencyPatients.length) {
-                sortedWaiting.push(emergencyPatients[emergencyIndex]);
-                emergencyIndex++;
-              }
-              // Add remaining regular patients
-              else if (regularIndex < regularPatients.length) {
-                sortedWaiting.push(regularPatients[regularIndex]);
-                regularIndex++;
-              }
-            }
-            
-            // Sort by ticket number within each group
-            const finalSorted = [];
-            let tempRegular = [];
-            let tempEmergency = [];
-            
-            for (const patient of sortedWaiting) {
-              if (patient.emergency_type) {
-                if (tempRegular.length > 0) {
-                  finalSorted.push(...tempRegular.sort((a, b) => a.ticket_number - b.ticket_number));
-                  tempRegular = [];
+              
+              // Continue alternating: emergency after every 2 regular
+              while (regularIndex < regularPatients.length || emergencyIndex < emergencyPatients.length) {
+                // Add emergency patient
+                if (emergencyIndex < emergencyPatients.length && regularCount >= 2) {
+                  finalSorted.push(emergencyPatients[emergencyIndex++]);
+                  regularCount = 0; // Reset counter
                 }
-                tempEmergency.push(patient);
-              } else {
-                if (tempEmergency.length > 0) {
-                  finalSorted.push(...tempEmergency.sort((a, b) => a.ticket_number - b.ticket_number));
-                  tempEmergency = [];
-                }
-                tempRegular.push(patient);
-                if (tempRegular.length === 2) {
-                  finalSorted.push(...tempRegular.sort((a, b) => a.ticket_number - b.ticket_number));
-                  tempRegular = [];
+                
+                // Add up to 2 regular patients
+                for (let i = 0; i < 2 && regularIndex < regularPatients.length; i++) {
+                  finalSorted.push(regularPatients[regularIndex++]);
+                  regularCount++;
                 }
               }
-            }
-            
-            // Add any remaining patients
-            if (tempRegular.length > 0) {
-              finalSorted.push(...tempRegular.sort((a, b) => a.ticket_number - b.ticket_number));
-            }
-            if (tempEmergency.length > 0) {
-              finalSorted.push(...tempEmergency.sort((a, b) => a.ticket_number - b.ticket_number));
+              
+              // Add any remaining emergency patients
+              while (emergencyIndex < emergencyPatients.length) {
+                finalSorted.push(emergencyPatients[emergencyIndex++]);
+              }
             }
             
             const nextPatients = finalSorted.slice(0, 6);
