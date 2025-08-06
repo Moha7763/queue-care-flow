@@ -118,7 +118,6 @@ const Display = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="max-w-7xl mx-auto p-2 sm:p-4 space-y-3 sm:space-y-6">
         <div className="text-center">
           <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-2 sm:mb-4">شاشة عرض المرضى</h1>
@@ -139,21 +138,64 @@ const Display = () => {
             const emergencyPatients = waitingPatients.filter(t => t.emergency_type);
             const regularPatients = waitingPatients.filter(t => !t.emergency_type);
             
-            // Emergency cases after 2 regular patients, then rest
+            // Emergency cases after 2 regular patients, then alternating
             const sortedWaiting = [];
+            let regularIndex = 0;
+            let emergencyIndex = 0;
             
-            // Add first 2 regular patients
-            const firstTwoRegular = regularPatients.slice(0, 2).sort((a, b) => a.ticket_number - b.ticket_number);
-            sortedWaiting.push(...firstTwoRegular);
+            // Add patients in order: 2 regular, then all emergency, then rest regular
+            while (regularIndex < regularPatients.length || emergencyIndex < emergencyPatients.length) {
+              // Add up to 2 regular patients
+              if (regularIndex < regularPatients.length && sortedWaiting.filter(t => !t.emergency_type).length % 3 < 2) {
+                sortedWaiting.push(regularPatients[regularIndex]);
+                regularIndex++;
+              }
+              // Add emergency patients after every 2 regular patients
+              else if (emergencyIndex < emergencyPatients.length) {
+                sortedWaiting.push(emergencyPatients[emergencyIndex]);
+                emergencyIndex++;
+              }
+              // Add remaining regular patients
+              else if (regularIndex < regularPatients.length) {
+                sortedWaiting.push(regularPatients[regularIndex]);
+                regularIndex++;
+              }
+            }
             
-            // Add all emergency patients next
-            const sortedEmergency = emergencyPatients.sort((a, b) => a.ticket_number - b.ticket_number);
-            sortedWaiting.push(...sortedEmergency);
+            // Sort by ticket number within each group
+            const finalSorted = [];
+            let tempRegular = [];
+            let tempEmergency = [];
             
-            // Add remaining regular patients
-            const remainingRegular = regularPatients.slice(2).sort((a, b) => a.ticket_number - b.ticket_number);
-            sortedWaiting.push(...remainingRegular);
-            const nextPatients = sortedWaiting.slice(0, 5);
+            for (const patient of sortedWaiting) {
+              if (patient.emergency_type) {
+                if (tempRegular.length > 0) {
+                  finalSorted.push(...tempRegular.sort((a, b) => a.ticket_number - b.ticket_number));
+                  tempRegular = [];
+                }
+                tempEmergency.push(patient);
+              } else {
+                if (tempEmergency.length > 0) {
+                  finalSorted.push(...tempEmergency.sort((a, b) => a.ticket_number - b.ticket_number));
+                  tempEmergency = [];
+                }
+                tempRegular.push(patient);
+                if (tempRegular.length === 2) {
+                  finalSorted.push(...tempRegular.sort((a, b) => a.ticket_number - b.ticket_number));
+                  tempRegular = [];
+                }
+              }
+            }
+            
+            // Add any remaining patients
+            if (tempRegular.length > 0) {
+              finalSorted.push(...tempRegular.sort((a, b) => a.ticket_number - b.ticket_number));
+            }
+            if (tempEmergency.length > 0) {
+              finalSorted.push(...tempEmergency.sort((a, b) => a.ticket_number - b.ticket_number));
+            }
+            
+            const nextPatients = finalSorted.slice(0, 6);
 
             return (
               <Card key={type} className="min-h-[200px] sm:min-h-[300px] lg:min-h-[400px]">
@@ -207,44 +249,46 @@ const Display = () => {
                     <h3 className="text-xs sm:text-sm lg:text-lg font-semibold mb-2 sm:mb-4 text-center">
                       المرضى القادمون
                     </h3>
-                     {nextPatients.length > 0 ? (
-                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2">
-                          {nextPatients.slice(0, window.innerWidth < 640 ? 3 : 5).map((ticket, index) => (
-                            <div 
-                              key={ticket.id} 
-                              className={`text-center p-2 sm:p-3 lg:p-4 rounded-xl border-2 shadow-sm hover:shadow-md transition-all ${
-                                index === 0 
-                                  ? 'bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30 shadow-primary/10' 
-                                  : ticket.emergency_type
-                                  ? 'bg-gradient-to-br from-red-50 to-red-25 border-red-300 shadow-red-100'
-                                  : 'bg-gradient-to-br from-muted/50 to-muted/30 border-border hover:border-primary/30'
-                              }`}
-                            >
-                              <div className={`text-lg sm:text-xl lg:text-3xl font-bold mb-1 ${
-                                index === 0 
-                                  ? 'text-primary' 
-                                  : ticket.emergency_type
-                                  ? 'text-red-600'
-                                  : 'text-muted-foreground'
-                              }`}>
-                                {ticket.emergency_type && '🚨 '}
-                                {examPrefixes[type as ExamType]}{ticket.ticket_number}
-                              </div>
-                              {index === 0 && (
-                                <Badge className="text-xs mt-1 hidden sm:inline-flex bg-primary text-primary-foreground">
-                                  {ticket.emergency_type ? 'طوارئ التالي' : 'التالي'}
-                                </Badge>
-                              )}
-                              {ticket.emergency_type && index > 0 && (
-                                <Badge variant="destructive" className="text-xs mt-1 hidden sm:inline-flex">
-                                  طوارئ
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                       </div>
+                      {nextPatients.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+                           {nextPatients.map((ticket, index) => (
+                             <div 
+                               key={ticket.id} 
+                               className={`text-center p-3 sm:p-4 rounded-xl border-2 shadow-lg transition-all duration-300 hover:scale-105 ${
+                                 index === 0 
+                                   ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-400 shadow-emerald-500/30' 
+                                   : ticket.emergency_type
+                                   ? 'bg-gradient-to-br from-red-500/20 to-red-600/10 border-red-400 shadow-red-500/30'
+                                   : 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-300 shadow-gray-400/20 hover:border-primary/50'
+                               }`}
+                             >
+                               <div className={`text-xl sm:text-2xl lg:text-4xl font-black mb-2 ${
+                                 index === 0 
+                                   ? 'text-emerald-700' 
+                                   : ticket.emergency_type
+                                   ? 'text-red-700'
+                                   : 'text-gray-700'
+                               }`}>
+                                 {ticket.emergency_type && (
+                                   <div className="text-red-600 text-sm mb-1">🚨</div>
+                                 )}
+                                 {examPrefixes[type as ExamType]}{ticket.ticket_number}
+                               </div>
+                               {index === 0 && (
+                                 <Badge className="text-xs px-2 py-1 bg-emerald-600 text-white font-semibold">
+                                   {ticket.emergency_type ? 'طوارئ التالي' : 'التالي'}
+                                 </Badge>
+                               )}
+                               {ticket.emergency_type && index > 0 && (
+                                 <Badge className="text-xs px-2 py-1 bg-red-600 text-white font-semibold">
+                                   طوارئ
+                                 </Badge>
+                               )}
+                             </div>
+                           ))}
+                        </div>
                     ) : (
-                      <div className="text-center text-muted-foreground text-xs sm:text-sm">
+                      <div className="text-center text-gray-500 text-sm sm:text-base p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
                         لا يوجد مرضى في الانتظار
                       </div>
                     )}
@@ -255,9 +299,9 @@ const Display = () => {
                     <div className="text-xs sm:text-sm text-muted-foreground">
                       إجمالي المنتظرين
                     </div>
-                     <div className="text-lg sm:text-xl lg:text-2xl font-bold text-postponed">
-                       {sortedWaiting.length}
-                     </div>
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">
+                        {finalSorted.length}
+                      </div>
                   </div>
                 </CardContent>
               </Card>
@@ -273,7 +317,6 @@ const Display = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
