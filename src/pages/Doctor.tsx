@@ -222,6 +222,58 @@ const Doctor = () => {
     }
   };
 
+  const callEmergency = async (examType: ExamType) => {
+    if (actionInProgress) return;
+    
+    setLoading(true);
+    try {
+      const currentTickets = tickets[examType];
+      const currentPatient = currentTickets.find(t => t.status === 'current');
+      const emergencyWaiting = currentTickets.filter(t => t.status === 'waiting' && t.emergency_type).sort((a, b) => a.ticket_number - b.ticket_number);
+
+      // Complete current patient if exists
+      if (currentPatient) {
+        await supabase
+          .from('tickets')
+          .update({ 
+            status: 'completed',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', currentPatient.id);
+      }
+
+      // Move next emergency patient to current
+      if (emergencyWaiting.length > 0) {
+        await supabase
+          .from('tickets')
+          .update({ status: 'current' })
+          .eq('id', emergencyWaiting[0].id);
+
+        toast({
+          title: "🚨 تم استدعاء حالة طوارئ",
+          description: `${examTypes[examType]} - رقم ${emergencyWaiting[0].ticket_number} (طوارئ)`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "لا توجد حالات طوارئ",
+          description: `${examTypes[examType]} - لا توجد حالات طوارئ في الانتظار`,
+          variant: "destructive"
+        });
+      }
+
+      loadTickets();
+    } catch (error) {
+      toast({
+        title: "خطأ في استدعاء حالة الطوارئ",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const postponePatient = async (ticketId: string, examType: ExamType) => {
     if (actionInProgress) return;
     
@@ -525,16 +577,30 @@ const Doctor = () => {
                     </Alert>
                   )}
 
-                  {/* Next Patient Button */}
-                  <Button
-                    onClick={() => nextPatient(type as ExamType)}
-                    disabled={loading || waitingPatients.length === 0 || !!actionInProgress}
-                    className="w-full h-12 text-sm font-semibold"
-                  >
-                    <ChevronRight className="w-5 h-5 mr-2" />
-                    المريض التالي
-                    {waitingPatients.length > 0 && ` (${waitingPatients[0].ticket_number})`}
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => nextPatient(type as ExamType)}
+                      disabled={loading || waitingPatients.length === 0 || !!actionInProgress}
+                      className="w-full h-12 text-sm font-semibold"
+                    >
+                      <ChevronRight className="w-5 h-5 mr-2" />
+                      المريض التالي
+                      {waitingPatients.length > 0 && ` (${waitingPatients[0].ticket_number})`}
+                    </Button>
+                    
+                    {examTickets.filter(t => t.status === 'waiting' && t.emergency_type).length > 0 && (
+                      <Button
+                        onClick={() => callEmergency(type as ExamType)}
+                        disabled={loading || !!actionInProgress}
+                        variant="destructive"
+                        className="w-full h-12 text-sm font-semibold bg-red-600 hover:bg-red-700"
+                      >
+                        🚨 استدعاء حالة طوارئ
+                        {` (${examTickets.filter(t => t.status === 'waiting' && t.emergency_type).length})`}
+                      </Button>
+                    )}
+                  </div>
 
                    {/* Waiting Queue */}
                    <div className="space-y-2">

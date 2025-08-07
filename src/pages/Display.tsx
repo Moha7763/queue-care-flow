@@ -182,31 +182,35 @@ const Display = () => {
                     {name}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-2 sm:p-4 lg:p-8 space-y-2 sm:space-y-4 lg:space-y-6">
+                 <CardContent className="p-2 sm:p-4 lg:p-8 space-y-2 sm:space-y-4 lg:space-y-6">
                    {/* Current Patient */}
                    <div className="text-center">
                      <h3 className="text-xs sm:text-sm lg:text-xl font-semibold mb-2 sm:mb-4">المريض الحالي</h3>
                      {currentPatient ? (
-                       <div className={`border-2 rounded-lg p-2 sm:p-4 lg:p-6 ${
+                       <div className={`border-2 rounded-lg p-2 sm:p-4 lg:p-6 relative ${
                          currentPatient.emergency_type 
-                           ? 'bg-red-50 border-red-300' 
+                           ? 'bg-red-50 border-red-500 shadow-red-500/30 shadow-lg' 
                            : 'bg-current/10 border-current/20'
                        }`}>
+                         {currentPatient.emergency_type && (
+                           <div className="absolute -top-2 -right-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                             🚨 طوارئ
+                           </div>
+                         )}
                          <div className={`text-2xl sm:text-4xl lg:text-6xl font-bold mb-1 sm:mb-2 ${
                            currentPatient.emergency_type 
-                             ? 'text-red-600' 
+                             ? 'text-red-600 animate-bounce' 
                              : 'text-current'
                          }`}>
-                           {currentPatient.emergency_type && '🚨 '}
                            {examPrefixes[type as ExamType]}{currentPatient.ticket_number}
                          </div>
                          <div className="space-y-1">
                            <Badge className={`text-xs sm:text-sm lg:text-lg px-2 sm:px-4 py-1 sm:py-2 ${
                              currentPatient.emergency_type 
-                               ? 'bg-red-600 text-white' 
+                               ? 'bg-red-600 text-white animate-pulse' 
                                : 'bg-current text-white'
                            }`}>
-                             {currentPatient.emergency_type ? 'طوارئ - جاري الفحص' : 'جاري الفحص'}
+                             {currentPatient.emergency_type ? '🚨 حالة طوارئ - جاري الفحص' : 'جاري الفحص'}
                            </Badge>
                          </div>
                        </div>
@@ -220,7 +224,7 @@ const Display = () => {
                         </Badge>
                       </div>
                     )}
-                  </div>
+                   </div>
 
                   {/* Next Patients */}
                   <div>
@@ -232,29 +236,39 @@ const Display = () => {
                            {nextPatients.map((ticket, index) => (
                              <div 
                                key={ticket.id} 
-                               className={`text-center p-3 sm:p-4 rounded-xl border-2 shadow-lg transition-all duration-300 hover:scale-105 ${
+                               className={`text-center p-3 sm:p-4 rounded-xl border-2 shadow-lg transition-all duration-300 hover:scale-105 relative ${
                                  index === 0 
-                                   ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-400 shadow-emerald-500/30' 
+                                   ? ticket.emergency_type
+                                     ? 'bg-gradient-to-br from-red-500/30 to-red-600/20 border-red-500 shadow-red-500/40 animate-pulse'
+                                     : 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-400 shadow-emerald-500/30'
                                    : ticket.emergency_type
                                    ? 'bg-gradient-to-br from-red-500/20 to-red-600/10 border-red-400 shadow-red-500/30'
                                    : 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-300 shadow-gray-400/20 hover:border-primary/50'
                                }`}
                              >
+                               {ticket.emergency_type && (
+                                 <div className="absolute -top-1 -right-1 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+                                   🚨
+                                 </div>
+                               )}
                                <div className={`text-xl sm:text-2xl lg:text-4xl font-black mb-2 ${
                                  index === 0 
-                                   ? 'text-emerald-700' 
+                                   ? ticket.emergency_type
+                                     ? 'text-red-700 animate-bounce'
+                                     : 'text-emerald-700'
                                    : ticket.emergency_type
                                    ? 'text-red-700'
                                    : 'text-gray-700'
                                }`}>
-                                 {ticket.emergency_type && (
-                                   <div className="text-red-600 text-sm mb-1">🚨</div>
-                                 )}
                                  {examPrefixes[type as ExamType]}{ticket.ticket_number}
                                </div>
                                {index === 0 && (
-                                 <Badge className="text-xs px-2 py-1 bg-emerald-600 text-white font-semibold">
-                                   {ticket.emergency_type ? 'طوارئ التالي' : 'التالي'}
+                                 <Badge className={`text-xs px-2 py-1 font-semibold ${
+                                   ticket.emergency_type 
+                                     ? 'bg-red-600 text-white animate-pulse'
+                                     : 'bg-emerald-600 text-white'
+                                 }`}>
+                                   {ticket.emergency_type ? '🚨 طوارئ التالي' : 'التالي'}
                                  </Badge>
                                )}
                                {ticket.emergency_type && index > 0 && (
