@@ -133,7 +133,7 @@ const Display = () => {
           {Object.entries(examTypes).map(([type, name]) => {
             const examTickets = tickets[type as ExamType];
             const currentPatient = examTickets.find(t => t.status === 'current');
-            // Fixed sorting: emergency cases after every 2 completed regular cases
+            // Fixed sorting: emergency cases after every 2 regular cases
             const waitingPatients = examTickets.filter(t => t.status === 'waiting');
             const emergencyPatients = waitingPatients.filter(t => t.emergency_type).sort((a, b) => a.ticket_number - b.ticket_number);
             const regularPatients = waitingPatients.filter(t => !t.emergency_type).sort((a, b) => a.ticket_number - b.ticket_number);
@@ -145,42 +145,31 @@ const Display = () => {
             } else if (regularPatients.length === 0) {
               finalSorted = emergencyPatients;
             } else {
-              let regularIndex = 0;
-              let emergencyIndex = 0;
-              let regularCount = 0;
-              
-              // Count completed regular patients today to determine insertion point
+              // Count completed regular patients today (including current)
               const completedRegularToday = examTickets.filter(t => 
-                t.status === 'completed' && !t.emergency_type
+                (t.status === 'completed' || t.status === 'current') && !t.emergency_type
               ).length;
               
-              // Calculate how many regular patients should go before the next emergency
-              const regularBeforeNext = 2 - (completedRegularToday % 2);
+              let regularIndex = 0;
+              let emergencyIndex = 0;
               
-              // Add regular patients before first emergency
-              for (let i = 0; i < regularBeforeNext && regularIndex < regularPatients.length; i++) {
-                finalSorted.push(regularPatients[regularIndex++]);
-                regularCount++;
-              }
-              
-              // Continue alternating: emergency after every 2 regular
+              // Calculate pattern: after every 2 regular patients, insert an emergency
               while (regularIndex < regularPatients.length || emergencyIndex < emergencyPatients.length) {
-                // Add emergency patient
-                if (emergencyIndex < emergencyPatients.length && regularCount >= 2) {
-                  finalSorted.push(emergencyPatients[emergencyIndex++]);
-                  regularCount = 0; // Reset counter
-                }
+                // Calculate position in the cycle (0 or 1 means regular, 2 means emergency)
+                const currentPosition = (completedRegularToday + finalSorted.filter(t => !t.emergency_type).length) % 3;
                 
-                // Add up to 2 regular patients
-                for (let i = 0; i < 2 && regularIndex < regularPatients.length; i++) {
+                if (currentPosition < 2 && regularIndex < regularPatients.length) {
+                  // Add regular patient (positions 0 and 1 in cycle)
                   finalSorted.push(regularPatients[regularIndex++]);
-                  regularCount++;
+                } else if (emergencyIndex < emergencyPatients.length) {
+                  // Add emergency patient (position 2 in cycle)
+                  finalSorted.push(emergencyPatients[emergencyIndex++]);
+                } else if (regularIndex < regularPatients.length) {
+                  // If no more emergencies, add remaining regular patients
+                  finalSorted.push(regularPatients[regularIndex++]);
+                } else {
+                  break;
                 }
-              }
-              
-              // Add any remaining emergency patients
-              while (emergencyIndex < emergencyPatients.length) {
-                finalSorted.push(emergencyPatients[emergencyIndex++]);
               }
             }
             
