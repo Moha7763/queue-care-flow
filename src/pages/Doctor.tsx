@@ -214,6 +214,20 @@ const Doctor = () => {
           .update({ status: 'current' })
           .eq('id', waitingPatients[0].id);
 
+        // Play notification sound and vibrate
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGMcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+Pwtm...');
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+          
+          // Vibrate if supported
+          if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+          }
+        } catch (error) {
+          // Ignore audio/vibration errors
+        }
+
         toast({
           title: "تم استدعاء المريض التالي",
           description: `${examTypes[examType]} - رقم ${waitingPatients[0].ticket_number}`
@@ -263,6 +277,20 @@ const Doctor = () => {
           .from('tickets')
           .update({ status: 'current' })
           .eq('id', emergencyWaiting[0].id);
+
+        // Play emergency sound and vibrate
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGMcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+Pwtm...');
+          audio.volume = 0.8;
+          audio.play().catch(() => {});
+          
+          // Strong vibration for emergency
+          if (navigator.vibrate) {
+            navigator.vibrate([300, 100, 300, 100, 300]);
+          }
+        } catch (error) {
+          // Ignore audio/vibration errors
+        }
 
         toast({
           title: "🚨 تم استدعاء حالة طوارئ",
@@ -594,27 +622,33 @@ const Doctor = () => {
 
                   {/* Action Buttons */}
                   <div className="space-y-2">
-                    <Button
-                      onClick={() => nextPatient(type as ExamType)}
-                      disabled={loading || waitingPatients.length === 0 || !!actionInProgress}
-                      className="w-full h-12 text-sm font-semibold"
-                    >
-                      <ChevronRight className="w-5 h-5 mr-2" />
-                      المريض التالي
-                      {waitingPatients.length > 0 && ` (${waitingPatients[0].ticket_number})`}
-                    </Button>
+                     <Button
+                       onClick={() => nextPatient(type as ExamType)}
+                       disabled={loading || waitingPatients.length === 0 || !!actionInProgress}
+                       className="w-full h-12 text-sm font-semibold"
+                     >
+                       <ChevronRight className="w-5 h-5 mr-2" />
+                       المريض التالي
+                       {waitingPatients.length > 0 && (
+                         <span className="mr-2 bg-primary-foreground text-primary px-2 py-1 rounded-full text-xs font-bold">
+                           {waitingPatients[0].ticket_number}
+                         </span>
+                       )}
+                     </Button>
                     
-                    {examTickets.filter(t => t.status === 'waiting' && t.emergency_type).length > 0 && (
-                      <Button
-                        onClick={() => callEmergency(type as ExamType)}
-                        disabled={loading || !!actionInProgress}
-                        variant="destructive"
-                        className="w-full h-12 text-sm font-semibold bg-red-600 hover:bg-red-700"
-                      >
-                        🚨 استدعاء حالة طوارئ
-                        {` (${examTickets.filter(t => t.status === 'waiting' && t.emergency_type).length})`}
-                      </Button>
-                    )}
+                     {emergencyWaiting.length > 0 && (
+                       <Button
+                         onClick={() => callEmergency(type as ExamType)}
+                         disabled={loading || !!actionInProgress}
+                         variant="destructive"
+                         className="w-full h-12 text-sm font-semibold bg-red-600 hover:bg-red-700"
+                       >
+                         🚨 استدعاء حالة طوارئ
+                         <span className="mr-2 bg-white text-red-600 px-2 py-1 rounded-full text-xs font-bold">
+                           {emergencyWaiting.length}
+                         </span>
+                       </Button>
+                     )}
                   </div>
 
                    {/* Waiting Queue */}
