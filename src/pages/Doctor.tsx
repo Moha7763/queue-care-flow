@@ -124,6 +124,21 @@ const Doctor = () => {
           groupedTickets[ticket.exam_type as ExamType].push(ticket);
         });
 
+        // Check for newly cancelled tickets due to auto-cancellation
+        const autoCancelledTickets = data.filter((ticket: any) => 
+          ticket.status === 'cancelled' && ticket.postpone_count > 0
+        );
+        
+        if (autoCancelledTickets.length > 0) {
+          autoCancelledTickets.forEach((ticket: any) => {
+            toast({
+              title: "تم إلغاء تذكرة تلقائياً",
+              description: `${examTypes[ticket.exam_type]} - رقم ${ticket.ticket_number} (تم تجاوز الحد الأقصى للانتظار)`,
+              variant: "destructive"
+            });
+          });
+        }
+
         setTickets(groupedTickets);
       }
     } catch (error) {
